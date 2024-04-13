@@ -1,0 +1,10 @@
+
+{
+  "model": "qwen1.5",
+  "choices": [{
+    "message": {
+      "role": "assistant", 
+      "content": "✿FUNCTION✿: get_current_weather\n✿ARGS✿: {\n  \"location\": \"San Francisco, CA\",\n  \"unit\": \"fahrenheit\"\n}\n"
+    }
+  }]
+}                                                                                                                                                                                                                                                                              

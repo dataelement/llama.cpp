@@ -13,6 +13,7 @@
 #define CPPHTTPLIB_FORM_URL_ENCODED_PAYLOAD_MAX_LENGTH 1048576
 #include "httplib.h"
 #include "json.hpp"
+#include "func_utils.hpp"
 
 // auto generated files (update with ./deps.sh)
 #include "index.html.hpp"
@@ -3503,7 +3504,12 @@ int main(int argc, char ** argv) {
 
     const auto handle_chat_completions = [&ctx_server, &sparams, &res_error](const httplib::Request & req, httplib::Response & res) {
         res.set_header("Access-Control-Allow-Origin", req.get_header_value("Origin"));
-        json data = oaicompat_completion_params_parse(ctx_server.model, json::parse(req.body), sparams.chat_template);
+
+        auto body = llama_functionary::json::parse(req.body);
+        llama_functionary::adapte_oai_with_tool_call(body);
+        json data = oaicompat_completion_params_parse(ctx_server.model, body, sparams.chat_template);
+
+        // json data = oaicompat_completion_params_parse(ctx_server.model, json::parse(req.body), sparams.chat_template);
 
         const int id_task = ctx_server.queue_tasks.get_new_id();
 
@@ -3516,6 +3522,11 @@ int main(int argc, char ** argv) {
 
             if (!result.error && result.stop) {
                 json result_oai = format_final_response_oaicompat(data, result.data, completion_id);
+
+                std::string tool_choice = llama_functionary::json_value(body, "tool_choice", std::string());
+                if (tool_choice.compare("none") != 0) {
+                    llama_functionary::convert_response_to_oai_choices(result_oai);
+                }  
 
                 res.set_content(result_oai.dump(-1, ' ', false, json::error_handler_t::replace), "application/json; charset=utf-8");
             } else {

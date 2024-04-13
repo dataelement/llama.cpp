@@ -1,0 +1,9 @@
+{
+  "model": "qwen1.5",
+  "choices": [{
+    "message": {
+      "role": "assistant", 
+      "content": "The current weather in San Francisco, CA is 72 degrees Fahrenheit. Would you like me to convert that to Celsius? Also, let me fetch the weather for Paris now.\n\n✿FUNCTION✿: get_current_weather\n✿ARGS✿: {\"location\": \"Paris, France\", \"unit\": \"celsius\"}\n"
+    }
+  }]
+}                                                                                                                                                                                                                                                                              

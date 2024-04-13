@@ -412,12 +412,12 @@ static json oaicompat_completion_params_parse(
     }
 
     // Params supported by OAI but unsupported by llama.cpp
-    static const std::vector<std::string> unsupported_params { "tools", "tool_choice" };
-    for (auto & param : unsupported_params) {
-        if (body.contains(param)) {
-            throw std::runtime_error("Unsupported param: " + param);
-        }
-    }
+    // static const std::vector<std::string> unsupported_params { "tools", "tool_choice" };
+    // for (auto & param : unsupported_params) {
+    //     if (body.contains(param)) {
+    //         throw std::runtime_error("Unsupported param: " + param);
+    //     }
+    // }
 
     // Copy remaining properties to llama_params
     // This allows user to use llama.cpp-specific params like "mirostat", "tfs_z",... via OAI endpoint.

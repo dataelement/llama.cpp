@@ -7,6 +7,14 @@ add_executable(${TARGET}
     utils.hpp
     httplib.h
 )
+
+add_executable(func_utils_test
+    func_utils_test.cpp
+    func_utils.hpp
+)
+
+target_link_libraries(func_utils_test PRIVATE common json-schema-to-grammar ${CMAKE_THREAD_LIBS_INIT})
+
 install(TARGETS ${TARGET} RUNTIME)
 target_compile_definitions(${TARGET} PRIVATE
     SERVER_VERBOSE=$<BOOL:${LLAMA_SERVER_VERBOSE}>

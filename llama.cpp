@@ -16476,7 +16476,25 @@ static int32_t llama_chat_apply_template_internal(
         if (add_ass) {
             ss << "### Response:\n";
         }
-    } else {
+    } else if (tmpl == "cohere" || tmpl.find("|START_OF_TURN_TOKEN|") != std::string::npos) {
+        // Cohere Command-r
+        std::string system_prompt = "";
+        ss << "<BOS_TOKEN>";
+        for (auto message : chat) {
+            std::string role(message->role);
+            if (role == "system") {
+                // there is no system message support, we will merge it with user prompt
+                system_prompt = message->content;
+                ss << "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>" << system_prompt << "<|END_OF_TURN_TOKEN|>";
+            } else if (role == "user") {
+                ss << "<|START_OF_TURN_TOKEN|><|USER_TOKEN|>";
+                ss << message->content << "<|END_OF_TURN_TOKEN|>";
+            } else if (role == "assistant") {
+                ss << "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>" << message->content << "<|END_OF_TURN_TOKEN|>";
+            }
+        }
+        ss << "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>";
+    } else {     
         // template not supported
         return -1;
     }
