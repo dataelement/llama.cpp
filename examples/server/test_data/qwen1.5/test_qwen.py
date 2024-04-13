@@ -32,7 +32,7 @@ def test1(round):
 def test2(round):
     client = OpenAI(
         api_key="dummy",
-        base_url="http://34.87.129.78:9300/v1")
+        base_url="http://34.87.129.78:9301/v1")
         
     body = json.load(open('./round{}_message.txt'.format(round)))
     completion = client.chat.completions.create(

@@ -4,7 +4,7 @@
 function run_qwen() {
     export CUDA_VISIBLE_DEVICES=1
     model="/mnt/disks/elem-disk1/workspace/public/llm/Qwen1.5-32B-Chat-GGUF/qwen1_5-32b-chat-q5_k_m.gguf"
-    ./build/bin/server -m $model -c 30000 -n 2024 --host 0.0.0.0 --port 9300 --n-gpu-layers 100
+    ./build/bin/server -m $model -c 30000 -n 2024 --host 0.0.0.0 --port 9301 --n-gpu-layers 100
 }
 
 function run_cohere() {
