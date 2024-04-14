@@ -1,0 +1,10 @@
+Action: ```json
+[
+      {
+          "tool_name": "internet_search",
+          "parameters": {
+              "query": "biggest penguin in the world"
+          }
+      }
+]
+```

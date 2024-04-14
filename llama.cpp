@@ -16493,11 +16493,14 @@ static int32_t llama_chat_apply_template_internal(
                 ss << "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>" << message->content << "<|END_OF_TURN_TOKEN|>";
             }
         }
-        ss << "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>";
+        if (add_ass) {
+            ss << "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>";
+        }
     } else {     
         // template not supported
         return -1;
     }
+
     dest = ss.str();
     return dest.size();
 }

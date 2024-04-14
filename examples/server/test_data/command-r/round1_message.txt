@@ -1,0 +1,38 @@
+{
+    "model": "command-r-v01",
+    "messages": [
+        {
+            "role": "user",
+            "content": "Whats the biggest penguin in the world?"
+        }
+    ],
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "name": "internet_search",
+                "description": "Returns a list of relevant document snippets for a textual query retrieved from the internet",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Query to search the internet with"
+                        }
+                    },
+                    "required": [
+                        "query"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "directly_answer",
+                "description": "Calls a standard (un-augmented) AI chatbot to generate a response given the conversation history",
+                "parameters": {}
+            }
+        }
+    ]
+}
