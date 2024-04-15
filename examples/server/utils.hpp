@@ -373,7 +373,11 @@ static json oaicompat_completion_params_parse(
     llama_params["top_p"]             = json_value(body,   "top_p",             1.0);
 
     // Apply chat template to the list of messages
-    llama_params["prompt"] = format_chat(model, chat_template, body["messages"]);
+    if (body.contains("prompt") && body["prompt"].is_string()) {
+        llama_params["prompt"]  = body["prompt"].get<std::string>();
+    } else {
+        llama_params["prompt"] = format_chat(model, chat_template, body["messages"]);
+    }
 
     // Handle "stop" field
     if (body.contains("stop") && body["stop"].is_string()) {

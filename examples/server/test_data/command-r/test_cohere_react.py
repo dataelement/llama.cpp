@@ -100,19 +100,19 @@ You also have a 'random_operation_tool' tool, you must use it to compute the ran
     agent_executor = AgentExecutor(agent=agent, tools=[internet_search, python_tool, random_operation_tool], verbose=True)
 
 
-    response = agent_executor.invoke({
-        "input": "Calculate the result of the random operation of 10 and 20. Then find a few fun facts about that number, as well as its prime factors.",
-        "preamble": preamble,
-    })
-
-    response['output']
-
     # response = agent_executor.invoke({
-    #     "input": "Hey how are you?",
-    #     "preamble": preamble,
+    #    "input": "Calculate the result of the random operation of 10 and 20. Then find a few fun facts about that number, as well as its prime factors.",
+    #    "preamble": preamble,
     # })
 
     # response['output']
+
+    response = agent_executor.invoke({
+         "input": "Hey how are you?",
+         "preamble": preamble,
+    })
+
+    response['output']
 
     # note that the modle can directly answer!
      

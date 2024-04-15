@@ -3066,6 +3066,7 @@ int main(int argc, char ** argv) {
             "/embedding",
             "/embeddings",
             "/v1/embeddings",
+            "/v1/chat"
         };
 
         // If API key is not set, skip validation
@@ -3509,6 +3510,9 @@ int main(int argc, char ** argv) {
         llama_functionary::adapte_oai_with_tool_call(body);
         json data = oaicompat_completion_params_parse(ctx_server.model, body, sparams.chat_template);
 
+        std::cout << "---body---\n[" << req.body  << "]\n";
+        std::cout << "---prompt---\n[" << data["prompt"] << "]\n";
+
         // json data = oaicompat_completion_params_parse(ctx_server.model, json::parse(req.body), sparams.chat_template);
 
         const int id_task = ctx_server.queue_tasks.get_new_id();
@@ -3767,6 +3771,8 @@ int main(int argc, char ** argv) {
     svr->Post("/v1/embeddings",       handle_embeddings);
     svr->Post("/tokenize",            handle_tokenize);
     svr->Post("/detokenize",          handle_detokenize);
+    svr->Post("/v1/chat",             handle_chat_completions);
+
     if (!sparams.slot_save_path.empty()) {
         // only enable slot endpoints if slot_save_path is set
         svr->Post("/slots/:id_slot",  handle_slots_action);

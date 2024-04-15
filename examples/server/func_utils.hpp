@@ -202,15 +202,82 @@ inline std::string serialize_function(function_def & fn) {
     return ss.str();
 }
 
+inline static bool adapte_oai_with_cohere_api(json & body) {
+    // api refer https://docs.cohere.com/reference/chat
+    // parameter align
+    float p = json_value(body, "p", 0.75);
+    body["top_p"] = p;
+
+    int k = json_value(body, "k", 0);
+    body["top_k"] = k;
+
+    float temperature = json_value(body, "temperature", 0.3);
+    body["temperature"] = temperature;
+
+    auto stop = json_value(body, "stop_sequences", json::array());
+    body["stop"] = stop;
+
+    bool raw_prompt = json_value(body, "raw_prompt", false);
+    if (raw_prompt) {
+        body["prompt"] = body["message"];
+    } else {
+        json oai_messages = json::array();
+        auto messages = json_value(body, "chat_history", json::array());
+        for (const auto & msg: messages) {
+            std::string role = json_value(msg, "role", std::string());
+            json oai_msg = json::object();
+            if (role.compare("USER") == 0) {
+                oai_msg["role"] = "user";
+                oai_msg["content"] = msg["message"];
+            } else if (role.compare("CHATBOT") == 0) {
+                oai_msg["role"] = "assistant";
+                oai_msg["content"] = msg["message"];
+            } else if (role.compare("SYSTEM") == 0) {
+                oai_msg["role"] = "system";
+                oai_msg["content"] = msg["message"];
+            }
+            oai_messages.emplace_back(oai_msg);
+        }
+
+        std::string message = json_value(body, "message", std::string());
+        if (!message.empty()) {
+            json oai_msg = json::object();
+            oai_msg["role"] = "user";
+            oai_msg["content"] = message;
+            oai_messages.emplace_back(oai_msg);
+        }
+        body["messages"] = oai_messages;
+    }
+    return true;
+}
+
 ///////////////////////////////////////////
 inline bool adapte_oai_with_tool_call(json & body) {
     std::string model = json_value(body, "model", std::string());
     std::transform(model.begin(), model.end(), model.begin(),
                 [](unsigned char c){ return std::tolower(c); });
 
-    // only support qwen1.5 model
-    if (model.find("qwen1.5") == std::string::npos)  {
+    if (model.find("command-r") != std::string::npos) {
+        adapte_oai_with_cohere_api(body);
         return true;
+    }
+
+    // only support qwen1.5 model
+    if (model.find("qwen1.5") == std::string::npos) {
+        return true;
+    }
+
+    // set the default parameters
+    if (!body.contains("top_p")) {
+        body["top_p"] = 0.8;
+    }
+
+    if (!body.contains("termperature")) {
+        body["termperature"] = 0.85;
+    }
+
+    if (!body.contains("repetition_penalty")) {
+        body["repetition_penalty"] = 1.1;
     }
 
     // Qwen Function Call Prompt Design:
