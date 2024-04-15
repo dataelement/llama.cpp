@@ -1,0 +1,212 @@
+{
+    "messages": [
+        {
+            "content": "You are a helpful assistant.你必须先使用get_current_time这个工具查询当前时间，再进行下一步查询。",
+            "role": "system"
+        },
+        {
+            "content": "请画一下2023年M2同比增长的数据折线图",
+            "role": "user"
+        },
+        {
+            "content": "",
+            "role": "assistant",
+            "tool_calls": [
+                {
+                    "id": "call_tEEquf1kRXhZjIN3Q2N2YmA5p",
+                    "function": {
+                        "arguments": "{\"start_date\": \"2023-01-01\", \"end_date\": \"2023-12-01\"}",
+                        "name": "macro_china_money_supply"
+                    },
+                    "type": "function"
+                }
+            ]
+        },
+        {
+            "content": "|    | 月份         |   货币和准货币(M2)-数量(亿元) |   货币和准货币(M2)-同比增长 |   货币和准货币(M2)-环比增长 |   货币(M1)-数量(亿元) |   货币(M1)-同比增长 |   货币(M1)-环比增长 |   流通中的现金(M0)-数量(亿元) |   流通中的现金(M0)-同比增长 |   流通中的现金(M0)-环比增长 |\n|---:|:-------------|------------------------------:|----------------------------:|----------------------------:|----------------------:|--------------------:|--------------------:|------------------------------:|----------------------------:|----------------------------:|\n|  3 | 2023年12月份 |                   2.92271e+06 |                         9.7 |                    0.367413 |                680543 |                 1.3 |            0.686357 |                        113445 |                         8.3 |                    2.9208   |\n|  4 | 2023年11月份 |                   2.91201e+06 |                        10   |                    1.03176  |                675903 |                 1.3 |            0.178946 |                        110225 |                        10.4 |                    1.52888  |\n|  5 | 2023年10月份 |                   2.88228e+06 |                        10.3 |                   -0.496539 |                674696 |                 1.9 |           -0.552379 |                        108565 |                        10.2 |                   -0.629611 |\n|  6 | 2023年09月份 |                   2.89666e+06 |                        10.3 |                    0.95199  |                678444 |                 2.1 |           -0.16844  |                        109253 |                        10.7 |                    2.57039  |\n|  7 | 2023年08月份 |                   2.86934e+06 |                        10.6 |                    0.536493 |                679588 |                 2.2 |            0.349877 |                        106515 |                         9.5 |                    0.363404 |\n|  8 | 2023年07月份 |                   2.85403e+06 |                        10.7 |                   -0.661055 |                677219 |                 2.3 |           -2.64185  |                        106130 |                         9.9 |                    0.673957 |\n|  9 | 2023年06月份 |                   2.87302e+06 |                        11.3 |                    1.86205  |                695595 |                 3.1 |            3.01257  |                        105419 |                         9.8 |                    0.632408 |\n| 10 | 2023年05月份 |                   2.8205e+06  |                        11.6 |                    0.428537 |                675253 |                 4.7 |            0.819908 |                        104757 |                         9.6 |                   -1.08376  |\n| 11 | 2023年04月份 |                   2.80847e+06 |                        12.4 |                   -0.216622 |                669762 |                 5.3 |           -1.2238   |                        105904 |                        10.7 |                    0.296577 |\n| 12 | 2023年03月份 |                   2.81457e+06 |                        12.7 |                    2.15288  |                678060 |                 5.1 |            3.05817  |                        105591 |                        11   |                   -1.86917  |\n| 13 | 2023年02月份 |                   2.75525e+06 |                        12.9 |                    0.627345 |                657939 |                 5.8 |            0.41583  |                        107603 |                        10.6 |                   -6.10702  |\n| 14 | 2023年01月份 |                   2.73807e+06 |                        12.6 |                    2.76811  |                655214 |                 6.7 |           -2.45068  |                        114601 |                         7.9 |                    9.45053  |",
+            "name": "macro_china_money_supply",
+            "role": "tool",
+            "tool_call_id": "call_tEEquf1kRXhZjIN3Q2N2YmA5p"
+        }
+    ],
+    "model": "qwen1.5",
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "name": "sina_realtime_info",
+                "description": "查询中国A股（沪深北交易所）股票或指数的实时行情数据，返回收盘价、涨跌额、涨跌幅、成交量、成交额",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "prefix": {
+                            "description": "前缀。如果是\"stock_symbol\"传入的为股票代码，则需要传入s_;如果\"stock_symbol\"传入的为指数代码，则为空。",
+                            "default": "",
+                            "type": "string"
+                        },
+                        "stock_exchange": {
+                            "description": "交易所简写。股票上市的交易所，或者发布行情指数的交易所。可选项有\"sh\"(上海证券交易所)、\" sz\"( 深圳证券交易所)、\"bj\"( 北京证券交易所)",
+                            "type": "string"
+                        },
+                        "stock_symbol": {
+                            "description": "6位数字的股票或者指数代码。\n参考信息：\n- 如果问题中未给出，可能需要上网查询。\n- 上交所股票通常以 6 开头，深交所股票通常以 0、3 开头，北交所股票通常以 8 开头。\n- 上交所行情指数通常以 000 开头，深交所指数通常以 399 开头。同一个指数可能会同时在两个交易所发布，例如沪深 300 有\"sh000300\"和\"sz399300\"两个代码。",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "stock_exchange",
+                        "stock_symbol"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "sina_history_KLine",
+                "description": "查询中国A股（沪深北交易所）股票或指数的的历史行情数据，返回时间、开盘价、最高价、最低价、收盘价、成交量（股）",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "stock_symbol": {
+                            "description": "6位数字的股票或者指数代码。\n参考信息：\n- 如果问题中未给出，可能需要上网查询。\n- 上交所股票通常以 6 开头，深交所股票通常以 0、3 开头，北交所股票通常以 8 开头。\n- 上交所行情指数通常以 000 开头，深交所指数通常以 399 开头。同一个指数可能会同时在两个交易所发布，例如沪深 300 有\"sh000300\"和\"sz399300\"两个代码。",
+                            "type": "string"
+                        },
+                        "stock_exchange": {
+                            "description": "交易所简写。股票上市的交易所，或者发布行情指数的交易所。可选项有\"sh\"(上海证券交易所)、\" sz\"( 深圳证券交易所)、\"bj\"( 北京证券交易所)",
+                            "type": "string"
+                        },
+                        "date": {
+                            "description": "需要查询的时间，按照”2024-03-26“格式，传入日期",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "stock_symbol",
+                        "stock_exchange",
+                        "date"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "bisheng_code_interpreter",
+                "description": "Evaluates python code in native environment. You must send the whole script every time and print your outputs. Script should be pure python code that can be evaluated. It should be in python format NOT markdown. The code should NOT be wrapped in backticks. If you have any files outputted write them to \"output/\" relative to the execution path. Output can only be read from the directory, stdout, and stdin. Do not use things like plot.show() as it will not work instead write them out `output/`print() any output and results so you can capture the output.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "python_code": {
+                            "description": "The pure python script to be evaluated. The contents will be in main.py. It should not be in markdown format.",
+                            "example": "print('Hello World')",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "python_code"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "bing_search",
+                "description": "A wrapper around Bing Search. Useful for when you need to answer questions about current events. Input should be a search query.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "description": "query to look up in Bing search",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "query"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_current_time",
+                "description": "get_current_time(timezone='Asia/Shanghai') - 获取当前UTC时间以及主要时区的时间，可用于时间、日期等场景相关的计算。当问题涉及到时间，调用此工具来查询和时间有关的内容。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "timezone": {
+                            "description": "The timezone to get the current time in. Such as 'Asia/Shanghai','Pacific/Palau' or 'US/Mountain'.",
+                            "default": "Asia/Shanghai",
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "calculator",
+                "description": "calculator(expression) - Useful to perform any mathematical calculations,\n    like sum, minus, multiplication, division, etc",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "expression": {
+                            "description": "The input to this tool should be a mathematical expression using only Python's built-in mathematical operators.",
+                            "example": "200*7",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "expression"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "dalle_image_generator",
+                "description": "A wrapper around OpenAI DALL-E API. Useful for when you need to generate images from a text description. Input should be an image description.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "description": "Description about image.",
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "query"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "macro_china_money_supply",
+                "description": "中国货币供应量（M2，M1，M0）月度统计数据。返回月份，M2 数量（单位：亿元），M2 同比（单位：%），M2 环比（单位：%）， M1 数量（单位：亿元），M1 同比（单位：%），M1 环比（单位：%）， M0数量（单位：亿元），M0 同比（单位：%），M0 环比（单位：%）\n        ",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "start_date": {
+                            "description": "开始月份, 使用YYYY-MM-DD 方式表示",
+                            "default": "",
+                            "example": "2023-01-01",
+                            "type": "string"
+                        },
+                        "end_date": {
+                            "description": "结束月份，使用YYYY-MM-DD 方式表示",
+                            "default": "",
+                            "example": "2023-05-01",
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

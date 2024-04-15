@@ -66,13 +66,32 @@ def test_qwen_round(round):
     print(">>>Q: {}\n>>>Bot: {}".format([user_prompt], [completion.choices[0].message.content]))
 
 
+def test4(input_file):
+    client = OpenAI(
+        api_key="dummy",
+        base_url="http://34.87.129.78:9301/v1")
+        
+    body = json.load(open(input_file))
+    completion = client.chat.completions.create(
+        model="qwen1.5-72b-chat",
+        messages=body["messages"],
+        tools=body["tools"],
+        temperature=0,
+        # tool_choice="none",
+    )
+
+    print('\n---Dailog round---')
+    print(">>>Q: xxx\n>>>Bot: {}".format([completion.choices[0].message]))
+
 # test1(1)
 # test1(2)
 
-test2(1)
-test2(2)
-test2(3)
+# test2(1)
+# test2(2)
+# test2(3)
 
 # test_qwen_round(1)
 # test_qwen_round(2)
 # test_qwen_round(3)
+# test4('./round1.json')
+test4('./round2.json')

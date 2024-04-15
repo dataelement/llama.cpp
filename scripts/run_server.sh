@@ -26,6 +26,6 @@ function run_command_r_plus() {
 }
 
 
-# run_qwen_72b
+run_qwen_72b
 # run_qwen_32b
-run_command_r_plus
+# run_command_r_plus

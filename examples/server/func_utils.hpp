@@ -268,6 +268,10 @@ inline bool adapte_oai_with_tool_call(json & body) {
     }
 
     // set the default parameters
+    if (!body.contains("top_k")) {
+        body["top_k"] = 0;
+    }
+
     if (!body.contains("top_p")) {
         body["top_p"] = 0.8;
     }
@@ -488,6 +492,21 @@ inline bool convert_response_to_oai_choices(json& response) {
     argsString = trim(argsString);
     if (argsString.empty()) {
         argsString = "{}";
+    }
+
+    // special process for the code interpreter arguments, process the argsString
+    // Input: ```py\nprint("Hello, World!")\n```
+    // Output: {"python_code": "print(\"Hello, World!\")"}
+    const std::string pycodeStartTag = "```py\n";
+    const std::string pycodeEndTag = "\n```";
+
+    size_t pycodeStart = argsString.find(pycodeStartTag);
+    size_t pycodeEnd = argsString.find(pycodeEndTag);
+    if (pycodeStart != std::string::npos && pycodeEnd != std::string::npos) {
+        std::string pycode = argsString.substr(
+            pycodeStart + pycodeStartTag.length(), 
+            pycodeEnd - pycodeStart - pycodeStartTag.length());
+        argsString = "{\"python_code\": \"" + pycode + "\"}";
     }
 
     json output = json::object();
