@@ -66,6 +66,16 @@ inline bool contains_chinese(const std::string& text) {
     return false;
 }
 
+
+inline void replaceAll(std::string &str, const std::string &oldStr, const std::string &newStr) {
+    size_t pos = 0;
+    while ((pos = str.find(oldStr, pos)) != std::string::npos) {
+        str.replace(pos, oldStr.length(), newStr);
+        pos += newStr.length();
+    }
+}
+
+
 inline std::string&
 ltrim(std::string& str)
 {
@@ -217,37 +227,327 @@ inline static bool adapte_oai_with_cohere_api(json & body) {
     auto stop = json_value(body, "stop_sequences", json::array());
     body["stop"] = stop;
 
-    bool raw_prompt = json_value(body, "raw_prompt", false);
-    if (raw_prompt) {
-        body["prompt"] = body["message"];
-    } else {
-        json oai_messages = json::array();
-        auto messages = json_value(body, "chat_history", json::array());
-        for (const auto & msg: messages) {
-            std::string role = json_value(msg, "role", std::string());
-            json oai_msg = json::object();
-            if (role.compare("USER") == 0) {
-                oai_msg["role"] = "user";
-                oai_msg["content"] = msg["message"];
-            } else if (role.compare("CHATBOT") == 0) {
-                oai_msg["role"] = "assistant";
-                oai_msg["content"] = msg["message"];
-            } else if (role.compare("SYSTEM") == 0) {
-                oai_msg["role"] = "system";
-                oai_msg["content"] = msg["message"];
+    // command r prompt design
+    // System Part: Safety Preamble + System Preamble + User Preamble + Tools Def
+    const std::string COMMAND_R_SAFTE_PREAMBLE = "# Safety Preamble\nThe instructions in this section override those in the task description and style guide sections. Don't answer questions that are harmful or immoral";
+    const std::string COMMAND_R_SYSTEM_PREAMBLE = "# System Preamble\n## Basic Rules\nYou are a powerful language agent trained by Cohere to help people. You are capable of complex reasoning and augmented with a number of tools. Your job is to plan and reason about how you will use and consume the output of these tools to best help the user. You will see a conversation history between yourself and a user, ending with an utterance from the user. You will then see an instruction informing you what kind of response to generate. You will construct a plan and then perform a number of reasoning and action steps to solve the problem. When you have determined the answer to the user's request, you will cite your sources in your answers, according the instructions";
+    const std::string COMMAND_R_USER_PREAMBLE = "# User Preamble\n\nYou are an expert who answers the user's question with the most relevant datasource. You are equipped with an internet search tool and a special vectorstore of information about how to write good essays.\nYou also have a 'random_operation_tool' tool, you must use it to compute the random operation between two numbers.";
+    const std::string COMMAND_EXECUTE_INSTRUCT = R"(Carefully perform the following instructions, in order, starting each with a new line.
+Firstly, You may need to use complex and advanced reasoning to complete your task and answer the question. Think about how you can use the provided tools to answer the question and come up with a high level plan you will execute.
+Write 'Plan:' followed by an initial high level plan of how you will solve the problem including the tools and steps required.
+Secondly, Carry out your plan by repeatedly using actions, reasoning over the results, and re-evaluating your plan. Perform Action, Observation, Reflection steps with the following format. Write 'Action:' followed by a json formatted action containing the "tool_name" and "parameters"
+ Next you will analyze the 'Observation:', this is the result of the action.
+After that you should always think about what to do next. Write 'Reflection:' followed by what you've figured out so far, any changes you need to make to your plan, and what you will do next including if you know the answer to the question.
+... (this Action/Observation/Reflection can repeat N times)
+Thirdly, Decide which of the retrieved documents are relevant to the user's last input by writing 'Relevant Documents:' followed by comma-separated list of document numbers. If none are relevant, you should instead write 'None'.
+Fourthly, Decide which of the retrieved documents contain facts that should be cited in a good answer to the user's last input by writing 'Cited Documents:' followed a comma-separated list of document numbers. If you dont want to cite any of them, you should instead write 'None'.
+Fifthly, Write 'Answer:' followed by a response to the user's last input in high quality natural english. Use the retrieved documents to help you. Do not insert any citations or grounding markup.
+Finally, Write 'Grounded answer:' followed by a response to the user's last input in high quality natural english. Use the symbols <co: doc> and </co: doc> to indicate when a fact comes from a document in the search result, e.g <co: 4>my fact</co: 4> for a fact from document 4.<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>Plan: First, I will use the random_operation_tool to calculate the result of the random operation between 10 and 20. Then, I will search for fun facts about the resulting number, as well as its prime factors.
+Action: ```json
+[
+    {
+        "tool_name": "random_operation",
+        "parameters": {
+            "a": 10,
+            "b": 20
+        }
+    }
+])";
+
+    // parse message
+    std::vector<json> messages = json_value(body, "messages", json::array());
+    int last_a_index = -1;
+    int message_size = (int)messages.size();
+    for (int i = message_size - 1; i >= 0; i--) {
+        std::string role = json_value(messages[i], "role", std::string());
+        if (role.compare("assistant") == 0 && !messages[i].contains("tool_calls")) {
+            last_a_index = i;
+            break;
+        }
+    }
+
+    std::vector<message> ua_messages;
+    std::vector<message> ft_messages;
+    std::string user_preamble = "";
+    std::string user_instruct = "";
+    std::string system_content = "";
+    for (int i = 0; i < message_size; i++) {
+        message msg(messages[i]);
+        if (msg.role.compare("assistant") == 0) {
+            if (msg.tool_calls_cnt > 0) {
+                if (i > last_a_index) {
+                    ft_messages.emplace_back(msg);
+                }
+            } else {
+                ua_messages.emplace_back(msg);
             }
-            oai_messages.emplace_back(oai_msg);
+        }
+        if (msg.role.compare("tool") == 0 ) {
+            if (i > last_a_index) {
+                ft_messages.emplace_back(msg);
+            }
+        } else if (msg.role.compare("system") == 0) {
+            system_content = msg.content;
+        } else if (msg.role.compare("user") == 0) {
+            ua_messages.emplace_back(msg);
+        }
+    }
+
+    if (system_content.empty()) {
+        user_preamble = COMMAND_R_USER_PREAMBLE;
+        user_instruct = COMMAND_EXECUTE_INSTRUCT;
+    } else {
+        const std::string INSTRUCT_TAG = "|<instruct>|";
+        size_t pos = system_content.find(INSTRUCT_TAG);
+        if (pos != std::string::npos) {
+            user_preamble = "# User Preamble\n\n" + system_content.substr(0, pos);
+            user_instruct = system_content.substr(pos + INSTRUCT_TAG.length());
+        } else {
+            user_preamble = "# User Preamble\n\n" + system_content;
+            user_instruct = COMMAND_EXECUTE_INSTRUCT;
+        }
+    }
+
+    // Part I. Tools Def Context
+    std::string tools_def_context = "";
+    std::vector<json> tools = json_value(body, "tools", json::array());
+    // bool has_chinese_prompt = false;
+    // for (const auto& msg: ua_messages) {
+    //     if (msg.role.compare("user") == 0 && contains_chinese(msg.content)) {
+    //         has_chinese_prompt = true;
+    //         break;
+    //     }
+    // }
+    // std::string tool_names = "";
+    if (!tools.empty()) {
+        std::stringstream ss_fn;
+        ss_fn << "## Available Tools\nHere is a list of tools that you have available to you:\n\n";
+
+        bool first_output = true;
+        for (auto & tool: tools) {
+            std::string python_function = "```python\n";
+            // Extracting function details from input JSON
+            std::string function_name = tool["function"]["name"];
+            std::string function_description = tool["function"]["description"];
+            json parameters = tool["function"]["parameters"]["properties"];
+            
+            // Generating Python function signature
+            python_function += "def " + function_name + "(";
+            for (auto it = parameters.begin(); it != parameters.end(); ++it) {
+                std::string type = it.value()["type"].get<std::string>();
+                if (type.compare("string") == 0) {
+                    type = "str";
+                }
+                python_function += it.key() + ": " + type + ", ";
+            }
+            // Removing trailing comma and space
+            if (!parameters.empty()) {
+                python_function.pop_back(); // remove last comma
+                python_function.pop_back(); // remove space
+            }
+            python_function += ") -> List[Dict]:\n";
+            
+            // Generating Python function documentation
+            python_function += "    \"\"\"" + function_description + "\n";
+            if (!parameters.empty()) {
+                python_function += "\n    Args:\n";
+            }
+            
+            for (auto it = parameters.begin(); it != parameters.end(); ++it) {
+                auto type = it.value()["type"].get<std::string>();
+                auto desc = it.value()["description"].get<std::string>();
+                if (type.compare("string") == 0) {
+                    type = "str";
+                }
+                python_function += "        " + it.key() + " (" + type + "): " + desc + "\n";
+            }
+            python_function += "    \"\"\"\n";
+            
+            // Adding pass statement
+            python_function += "    pass\n";
+            python_function += "```";
+            if (first_output) {
+                ss_fn << python_function;
+                first_output = false;
+            } else {
+                ss_fn << "\n\n" << python_function;
+            }
         }
 
-        std::string message = json_value(body, "message", std::string());
-        if (!message.empty()) {
-            json oai_msg = json::object();
-            oai_msg["role"] = "user";
-            oai_msg["content"] = message;
-            oai_messages.emplace_back(oai_msg);
-        }
-        body["messages"] = oai_messages;
+        tools_def_context = ss_fn.str();
     }
+    
+    // Part I. global system message
+    std::string global_system_content = "";
+    std::stringstream ss;
+    if (!tools_def_context.empty()) {
+        ss << COMMAND_R_SAFTE_PREAMBLE << "\n\n"
+           << COMMAND_R_SYSTEM_PREAMBLE << "\n\n"
+           << user_preamble << "\n\n\n";
+        
+        ss << tools_def_context << "\n";
+
+        global_system_content = ss.str();
+        // todo: add stop sequences for function call
+        // auto stop = json_value(body, "stop", json::array());
+        // stop.emplace_back("✿RESULT✿");
+        // stop.emplace_back("✿RESULT✿:");
+        // stop.emplace_back("✿RESULT✿:\n");
+        // body["stop"] = stop;
+    } else {
+        global_system_content = system_content;
+    }
+
+    bool has_ft_messages = ft_messages.size() > 0;
+    json oai_messages = json::array();
+    json system_msg = json::object();
+    system_msg["role"] = "system";
+    system_msg["content"] = global_system_content;
+    oai_messages.emplace_back(system_msg);
+
+    // s: system message
+    // U: user message with tool call, f: assistant result with tool call
+    // u: user message, t: tool call result
+    // support s ua ua U only
+    // Part II. user message + Function Result message
+    for (size_t i = 0; i < ua_messages.size(); i++) {
+        json msg = json::object();
+        msg["role"] = ua_messages[i].role;
+        msg["content"] = ua_messages[i].content;
+        oai_messages.emplace_back(msg);
+    }
+
+    // add instruct message for the function call
+    if (!tools_def_context.empty()) {
+        json msg = json::object();
+        msg["role"] = "system";
+        msg["content"] = user_instruct;
+        oai_messages.emplace_back(msg);
+    }
+
+    // add functin call assistant message and result message
+    if (has_ft_messages) {
+        // check the tool calls and result count
+        bool check_tool_call_results = true;
+        for (size_t i = 0; i < ft_messages.size();) {
+            message f_msg = ft_messages[i];
+            size_t tool_calls_cnt = f_msg.tool_calls.size();
+            if (i + tool_calls_cnt >= ft_messages.size()) {
+                check_tool_call_results = false;
+                break;
+            }
+
+            for (int j = i + 1; j < i + tool_calls_cnt + 1; j++) {
+                message t_msg = ft_messages[j];
+                if (t_msg.role.compare("tool") != 0) {
+                    check_tool_call_results = false;
+                    break;
+                }
+            }
+            i += tool_calls_cnt + 1;
+        } 
+
+        if (!check_tool_call_results) {
+            return;
+        }
+
+        // update message into oai messages
+        size_t result_cnt = 0;
+        for (size_t i = 0; i < ft_messages.size();) {
+            message f_msg = ft_messages[i];
+
+            // assitant message with function calls: assistant part + tool calls part
+            size_t tool_calls_cnt = f_msg.tool_calls.size();
+            json tool_calls = json::array();
+            for (size_t k = 0; k < tool_calls_cnt; k++) {
+                json tool_call = json::object();
+                tool_call["tool_name"] = f_msg.tool_calss[k]["function"]["name"];
+                tool_call["parameters"] = f_msg.tool_calss[k]["function"]["arguments"];
+                tool_calls.emplace_back(tool_call);
+            }
+
+            json oai_f_msg = json::object();
+            oai_f_msg["role"] = "assistant";
+            oai_f_msg["content"] = f_msg.content + "\nAction: " + tool_calls.dump(4);
+            oai_messages.emplace_back(oai_f_msg);
+
+            for (int j = i + 1; j < i + tool_calls_cnt + 1; j++) {
+                message t_msg = ft_messages[j];
+            }
+            i += tool_calls_cnt + 1;
+        } 
+
+        // Last Message must be use role
+        // message msg = ua_messages[ua_messages.size() - 1];
+        // ss << msg.content;
+        // // check ft_messages
+        // if (ft_messages.size() % 2 != 0) {
+        //     return false;
+        // }
+        // ss << "\n\n\n";
+        // // for (size_t i = 0; i < ft_messages.size() - 1; i+=2) {
+        // //     message f_msg = ft_messages[i];
+        // //     message t_msg = ft_messages[i + 1];
+        // //     std::string args_str = f_msg.tool_calls[0]["function"]["arguments"];
+        // //     if (i > 0) {
+        // //         ss << ":\n";
+        // //     }
+        // //     ss << "✿FUNCTION✿: " << t_msg.name << "\n";
+        // //     ss << "✿ARGS✿: " <<  args_str << "\n";
+        // //     ss << "✿RESULT✿: " << t_msg.content << "\n";
+        // //     ss << "✿RETURN✿";
+        // // }
+        // std::string user_content = ss.str();
+        // json msg_ = json::object();
+        // msg_["role"] = "user";
+        // msg_["content"] = user_content;
+        // oai_messages.emplace_back(msg_);
+
+        // use nolman::json to generate the function call message
+        // input example
+        //   "tool_calls": [
+        //         {
+        //           "id": "",
+        //           "function": { 
+        //             "name": "random_operation", 
+        //             "arguments": "{\"a\": \"10\", \"b\": \"20\"}"
+        //           },
+        //           "type": "function"
+        //         }
+        //     ]
+        // output example
+        // Action: ```json
+        // [
+        //     {
+        //         "tool_name": "random_operation",
+        //         "parameters": {
+        //             "a": 10,
+        //             "b": 20
+        //         }
+        //     }
+        // ]
+
+        std::vector<json> tool_calls = json_value(body, "tool_calls", json::array());
+        json action_message = json::array();
+        for (const auto& tool_call : tool_calls) {
+            json action;
+            action["tool_name"] = json_value(tool_call["function"], "name", std::string());
+            action["parameters"] = json::object();
+            std::string arguments = json_value(tool_call["function"], "arguments", std::string());
+            json arguments_json = json::parse(arguments);
+            for (auto it = arguments_json.begin(); it != arguments_json.end(); ++it) {
+            action["parameters"][it.key()] = it.value();
+            }
+            action_message.emplace_back(action);
+        }
+        std::string action_message_str = action_message.dump(4);
+        std::string action_message_formatted = "Action: ```json\n" + action_message_str + "\n```";
+        oai_messages.emplace_back(json{{"role", "system"}, {"content", action_message_formatted}});
+
+    }
+
+    body["messages"] = oai_messages;
+
     return true;
 }
 
@@ -351,6 +651,9 @@ inline bool adapte_oai_with_tool_call(json & body) {
     
     std::string tool_names = "";
     if (!tools.empty()) {
+        // set stream false for tool calls
+        body["stream"] = false;
+
         std::stringstream ss_fn;
         ss_fn << (has_chinese_prompt ? FUNCTIONARY_FN_PROMPT_ZH : FUNCTIONARY_FN_PROMPT_EN);
         for (auto & tool: tools) {
@@ -506,6 +809,7 @@ inline bool convert_response_to_oai_choices(json& response) {
         std::string pycode = argsString.substr(
             pycodeStart + pycodeStartTag.length(), 
             pycodeEnd - pycodeStart - pycodeStartTag.length());
+        replaceAll(pycode, "\n", "\\n");
         argsString = "{\"python_code\": \"" + pycode + "\"}";
     }
 

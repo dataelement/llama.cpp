@@ -64,4 +64,4 @@ def test3():
 #test2('raw_prompt3.txt')
 
 #test30()
-#test3()
+test3()

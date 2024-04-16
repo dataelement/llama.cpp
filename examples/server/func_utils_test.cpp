@@ -31,9 +31,9 @@ int main(int argc, char* argv[]) {
         llama_functionary::adapte_oai_with_tool_call(body);
         auto messages = body["messages"];
         if (system_or_user.compare("1") == 0) {
-            std::cout << messages[0]["content"];
+            std::cout << messages[0]["content"].get<std::string>();
         } else {
-            std::cout << messages[1]["content"];
+            std::cout << messages[1]["content"].get<std::string>();
         }   
     } else {
         llama_functionary::convert_response_to_oai_choices(body);
