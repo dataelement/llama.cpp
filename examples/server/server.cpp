@@ -3507,7 +3507,12 @@ int main(int argc, char ** argv) {
         res.set_header("Access-Control-Allow-Origin", req.get_header_value("Origin"));
 
         auto body = llama_functionary::json::parse(req.body);
-        llama_functionary::adapte_oai_with_tool_call(body);
+        auto status = llama_functionary::generate_oai_messages(body);
+        if (!status.ok()) {
+            res_error(res, status.message().c_str());
+            return;
+        }
+
         json data = oaicompat_completion_params_parse(ctx_server.model, body, sparams.chat_template);
 
         std::cout << "---body---\n[" << req.body  << "]\n";
@@ -3528,11 +3533,17 @@ int main(int argc, char ** argv) {
                 json result_oai = format_final_response_oaicompat(data, result.data, completion_id);
 
                 std::string tool_choice = llama_functionary::json_value(body, "tool_choice", std::string());
+                bool has_right_oai_response = true;
                 if (tool_choice.compare("none") != 0) {
-                    llama_functionary::convert_response_to_oai_choices(result_oai);
+                    auto status = llama_functionary::convert_oai_response(result_oai);
+                    if (!status.ok()) {
+                        has_right_oai_response = false;
+                        res_error(res, status.message().c_str());
+                    }
                 }  
-
-                res.set_content(result_oai.dump(-1, ' ', false, json::error_handler_t::replace), "application/json; charset=utf-8");
+                if (has_right_oai_response) {
+                    res.set_content(result_oai.dump(-1, ' ', false, json::error_handler_t::replace), "application/json; charset=utf-8");
+                }
             } else {
                 res_error(res, result.data);
             }

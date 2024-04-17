@@ -28,6 +28,18 @@
 
 namespace llama_functionary {
 
+class Status {
+public:
+    Status(bool ok, std::string message) : ok_(ok), message_(message) {}
+    Status() : ok_(true), message_("") {}
+    bool ok() const { return ok_; }
+    std::string message() const { return message_; }
+
+private:
+    bool ok_;
+    std::string message_;
+};
+
 // using json = nlohmann::json;
 using json = nlohmann::ordered_json;
 
@@ -212,7 +224,7 @@ inline std::string serialize_function(function_def & fn) {
     return ss.str();
 }
 
-inline static bool adapte_oai_with_cohere_api(json & body) {
+inline static Status generate_oai_message_for_cohere(json & body) {
     // api refer https://docs.cohere.com/reference/chat
     // parameter align
     float p = json_value(body, "p", 0.75);
@@ -242,17 +254,7 @@ After that you should always think about what to do next. Write 'Reflection:' fo
 Thirdly, Decide which of the retrieved documents are relevant to the user's last input by writing 'Relevant Documents:' followed by comma-separated list of document numbers. If none are relevant, you should instead write 'None'.
 Fourthly, Decide which of the retrieved documents contain facts that should be cited in a good answer to the user's last input by writing 'Cited Documents:' followed a comma-separated list of document numbers. If you dont want to cite any of them, you should instead write 'None'.
 Fifthly, Write 'Answer:' followed by a response to the user's last input in high quality natural english. Use the retrieved documents to help you. Do not insert any citations or grounding markup.
-Finally, Write 'Grounded answer:' followed by a response to the user's last input in high quality natural english. Use the symbols <co: doc> and </co: doc> to indicate when a fact comes from a document in the search result, e.g <co: 4>my fact</co: 4> for a fact from document 4.<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>Plan: First, I will use the random_operation_tool to calculate the result of the random operation between 10 and 20. Then, I will search for fun facts about the resulting number, as well as its prime factors.
-Action: ```json
-[
-    {
-        "tool_name": "random_operation",
-        "parameters": {
-            "a": 10,
-            "b": 20
-        }
-    }
-])";
+Finally, Write 'Grounded answer:' followed by a response to the user's last input in high quality natural english. Use the symbols <co: doc> and </co: doc> to indicate when a fact comes from a document in the search result, e.g <co: 4>my fact</co: 4> for a fact from document 4.)";
 
     // parse message
     std::vector<json> messages = json_value(body, "messages", json::array());
@@ -425,7 +427,15 @@ Action: ```json
         oai_messages.emplace_back(msg);
     }
 
-    // add functin call assistant message and result message
+    // add functin call assistant message and result message into the oai_messages
+    // the pattern is: f t f t f t a
+    // case 1: found the f message repeated for the multiple tool calls in one reflection action
+    // case 2: (UNSURE) the first f message (Plan) has mutiple tool calls, the f message should be repeated for each tool call result message
+    // maybe: func call logic in the langchain-cohere is not correct
+    // in current prompt design, multiple message is not compact, brief, and many repeated tokens
+    // very strange. 
+    // todo[experiment]: A simple solution is to merge the multiple tool call results into one message internally.
+
     if (has_ft_messages) {
         // check the tool calls and result count
         bool check_tool_call_results = true;
@@ -437,7 +447,7 @@ Action: ```json
                 break;
             }
 
-            for (int j = i + 1; j < i + tool_calls_cnt + 1; j++) {
+            for (size_t j = i + 1; j < i + tool_calls_cnt + 1; j++) {
                 message t_msg = ft_messages[j];
                 if (t_msg.role.compare("tool") != 0) {
                     check_tool_call_results = false;
@@ -448,10 +458,9 @@ Action: ```json
         } 
 
         if (!check_tool_call_results) {
-            return;
+            return Status(false, "failed to check tool call results count");
         }
 
-        // update message into oai messages
         size_t result_cnt = 0;
         for (size_t i = 0; i < ft_messages.size();) {
             message f_msg = ft_messages[i];
@@ -461,112 +470,55 @@ Action: ```json
             json tool_calls = json::array();
             for (size_t k = 0; k < tool_calls_cnt; k++) {
                 json tool_call = json::object();
-                tool_call["tool_name"] = f_msg.tool_calss[k]["function"]["name"];
-                tool_call["parameters"] = f_msg.tool_calss[k]["function"]["arguments"];
+                tool_call["tool_name"] = f_msg.tool_calls[k]["function"]["name"];
+                std::string params_str = f_msg.tool_calls[k]["function"]["arguments"];
+                json params = json::parse(params_str);
+                tool_call["parameters"] = params;
                 tool_calls.emplace_back(tool_call);
             }
 
             json oai_f_msg = json::object();
             oai_f_msg["role"] = "assistant";
-            oai_f_msg["content"] = f_msg.content + "\nAction: " + tool_calls.dump(4);
-            oai_messages.emplace_back(oai_f_msg);
+            oai_f_msg["content"] = f_msg.content + "\nAction: ```json\n" + tool_calls.dump(4) + "\n```";
 
-            for (int j = i + 1; j < i + tool_calls_cnt + 1; j++) {
+            for (size_t j = i + 1; j < i + tool_calls_cnt + 1; j++) {
+                oai_messages.emplace_back(oai_f_msg);
                 message t_msg = ft_messages[j];
+                json func_call_docs = json::parse(t_msg.content); 
+                std::string document_text = "<results>";
+                for (auto & doc: func_call_docs) {
+                    document_text += "\nDocument: " + std::to_string(result_cnt);
+                    result_cnt += 1;
+                    for (auto & item: doc.items()) {
+                        std::string key = item.key();
+                        std::string value = item.value();
+                        if (key.compare("text") == 0) {
+                            document_text += "\n" + value;
+                        } else {
+                            document_text += "\n" + key + ": " + value;
+                        }
+                    }
+                    document_text += "\n";
+                }
+                document_text += "<results>";
+
+                json oai_t_msg = json::object();
+                oai_t_msg["role"] = "system";
+                oai_t_msg["content"] = document_text;
+                oai_messages.emplace_back(oai_t_msg);
             }
             i += tool_calls_cnt + 1;
-        } 
-
-        // Last Message must be use role
-        // message msg = ua_messages[ua_messages.size() - 1];
-        // ss << msg.content;
-        // // check ft_messages
-        // if (ft_messages.size() % 2 != 0) {
-        //     return false;
-        // }
-        // ss << "\n\n\n";
-        // // for (size_t i = 0; i < ft_messages.size() - 1; i+=2) {
-        // //     message f_msg = ft_messages[i];
-        // //     message t_msg = ft_messages[i + 1];
-        // //     std::string args_str = f_msg.tool_calls[0]["function"]["arguments"];
-        // //     if (i > 0) {
-        // //         ss << ":\n";
-        // //     }
-        // //     ss << "✿FUNCTION✿: " << t_msg.name << "\n";
-        // //     ss << "✿ARGS✿: " <<  args_str << "\n";
-        // //     ss << "✿RESULT✿: " << t_msg.content << "\n";
-        // //     ss << "✿RETURN✿";
-        // // }
-        // std::string user_content = ss.str();
-        // json msg_ = json::object();
-        // msg_["role"] = "user";
-        // msg_["content"] = user_content;
-        // oai_messages.emplace_back(msg_);
-
-        // use nolman::json to generate the function call message
-        // input example
-        //   "tool_calls": [
-        //         {
-        //           "id": "",
-        //           "function": { 
-        //             "name": "random_operation", 
-        //             "arguments": "{\"a\": \"10\", \"b\": \"20\"}"
-        //           },
-        //           "type": "function"
-        //         }
-        //     ]
-        // output example
-        // Action: ```json
-        // [
-        //     {
-        //         "tool_name": "random_operation",
-        //         "parameters": {
-        //             "a": 10,
-        //             "b": 20
-        //         }
-        //     }
-        // ]
-
-        std::vector<json> tool_calls = json_value(body, "tool_calls", json::array());
-        json action_message = json::array();
-        for (const auto& tool_call : tool_calls) {
-            json action;
-            action["tool_name"] = json_value(tool_call["function"], "name", std::string());
-            action["parameters"] = json::object();
-            std::string arguments = json_value(tool_call["function"], "arguments", std::string());
-            json arguments_json = json::parse(arguments);
-            for (auto it = arguments_json.begin(); it != arguments_json.end(); ++it) {
-            action["parameters"][it.key()] = it.value();
-            }
-            action_message.emplace_back(action);
         }
-        std::string action_message_str = action_message.dump(4);
-        std::string action_message_formatted = "Action: ```json\n" + action_message_str + "\n```";
-        oai_messages.emplace_back(json{{"role", "system"}, {"content", action_message_formatted}});
-
     }
 
     body["messages"] = oai_messages;
 
-    return true;
+    return Status();
 }
 
 ///////////////////////////////////////////
-inline bool adapte_oai_with_tool_call(json & body) {
-    std::string model = json_value(body, "model", std::string());
-    std::transform(model.begin(), model.end(), model.begin(),
-                [](unsigned char c){ return std::tolower(c); });
 
-    if (model.find("command-r") != std::string::npos) {
-        adapte_oai_with_cohere_api(body);
-        return true;
-    }
-
-    // only support qwen1.5 model
-    if (model.find("qwen1.5") == std::string::npos) {
-        return true;
-    }
-
+inline static Status generate_oai_message_for_qwen15(json & body) {
     // set the default parameters
     if (!body.contains("top_k")) {
         body["top_k"] = 0;
@@ -722,7 +674,7 @@ inline bool adapte_oai_with_tool_call(json & body) {
         ss << msg.content;
         // check ft_messages
         if (ft_messages.size() % 2 != 0) {
-            return false;
+            return Status(false, "ft_messages size is not even");
         }
         ss << "\n\n\n";
         for (size_t i = 0; i < ft_messages.size() - 1; i+=2) {
@@ -750,26 +702,24 @@ inline bool adapte_oai_with_tool_call(json & body) {
     }
 
     body["messages"] = oai_messages;
-    return true;
+    return Status();
 }
 
-inline bool convert_response_to_oai_choices(json& response) {
-    const std::string functionTag = "✿FUNCTION✿:";
-    const std::string argsTag = "✿ARGS✿:";
-    
+
+inline static Status convert_oai_response_for_qwen15(json& response) {    
     std::string model = json_value(response, "model", std::string());
     std::transform(model.begin(), model.end(), model.begin(),
                 [](unsigned char c){ return std::tolower(c); });
-    if (model.find("qwen1.5") == std::string::npos)  {
-        return true;
-    }
+
+    const std::string functionTag = "✿FUNCTION✿:";
+    const std::string argsTag = "✿ARGS✿:";
 
     std::string content = json_value(response["choices"][0]["message"], "content", std::string());
 
     // Find the function name
     size_t functionNameStart = content.find(functionTag);
     if (functionNameStart == std::string::npos) {
-        return false;
+        return Status();
     }
     
     size_t functionNameEnd = content.find('\n', functionNameStart);
@@ -780,7 +730,7 @@ inline bool convert_response_to_oai_choices(json& response) {
     // trim the function name
     functionName = trim(functionName);
     if (functionName.empty()) {
-        return false;
+        return Status(false, "empty function name");
     }
 
     // Find the prefix assistant message
@@ -824,7 +774,32 @@ inline bool convert_response_to_oai_choices(json& response) {
     output["tool_calls"][0]["function"]["arguments"] = argsString;
     output["tool_calls"][0]["type"] = "function";
     response["choices"][0]["message"] = output;
-    return true;
+    return Status();
+}
+
+inline Status generate_oai_messages(json & body) {
+    std::string model = json_value(body, "model", std::string());
+    std::transform(model.begin(), model.end(), model.begin(),
+                [](unsigned char c){ return std::tolower(c); });
+
+    if (model.find("command-r") != std::string::npos) {
+        return generate_oai_message_for_cohere(body);
+    } else if (model.find("qwen1.5") != std::string::npos) {
+        return generate_oai_message_for_qwen15(body);
+    } else {
+        return Status();
+    }
+}
+
+inline Status convert_oai_response(json& response) {
+    std::string model = json_value(response, "model", std::string());
+    std::transform(model.begin(), model.end(), model.begin(),
+                [](unsigned char c){ return std::tolower(c); });
+    if (model.find("qwen1.5") != std::string::npos)  {
+        return convert_oai_response_for_qwen15(response);
+    } else {
+        return Status();
+    }
 }
 
 } // namespace llama_functionary

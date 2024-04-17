@@ -8,12 +8,13 @@
 
 int main(int argc, char* argv[]) {
     if (argc != 4) {
-        std::cerr << "Usage: " << argv[0] << " <filename> <io_type> <system_or_user>\n";
+        std::cerr << "Usage: " << argv[0] << " <filename> <io_type> <round>\n";
         return 1;
     }
 
     std::string io_type(argv[2]);
-    std::string system_or_user(argv[3]);
+    std::string round(argv[3]);
+    size_t num_round = std::stoi(round);
 
     std::ifstream file(argv[1]);
     if (!file) {
@@ -28,15 +29,15 @@ int main(int argc, char* argv[]) {
     auto body = llama_functionary::json::parse(contents);
 
     if (io_type.compare("0") == 0) {    
-        llama_functionary::adapte_oai_with_tool_call(body);
+        llama_functionary::generate_oai_messages(body);
         auto messages = body["messages"];
-        if (system_or_user.compare("1") == 0) {
-            std::cout << messages[0]["content"].get<std::string>();
-        } else {
-            std::cout << messages[1]["content"].get<std::string>();
-        }   
+        if (messages.size() <= num_round) {
+            std::cerr << "Invalid round number: " << num_round << std::endl;
+            return 1;
+        }
+        std::cout << messages[num_round]["content"].get<std::string>();
     } else {
-        llama_functionary::convert_response_to_oai_choices(body);
+        llama_functionary::convert_oai_response(body);
         std::cout << body.dump_style();
     }
 

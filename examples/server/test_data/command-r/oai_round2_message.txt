@@ -3,27 +3,23 @@
     "messages": [
         {
             "role": "system",
-            "content": "# User Preamble\n\nYou are an expert who answers the user\'s question with the most relevant datasource. You are equipped with an internet search tool and a special vectorstore of information about how to write good essays.\nYou also have a \'random_operation_tool\' tool, you must use it to compute the random operation between two numbers."
+            "content": "You are an expert who answers the user's question with the most relevant datasource. You are equipped with an internet search tool and a special vectorstore of information about how to write good essays.\nYou also have a 'random_operation_tool' tool, you must use it to compute the random operation between two numbers."
         },
         {
             "role": "user",
             "content": "Calculate the result of the random operation of 10 and 20. Then find a few fun facts about that number, as well as its prime factors."
         },
         {
-            "role": "system",
-            "content": "Carefully perform the following instructions, in order, starting each with a new line.\nFirstly, You may need to use complex and advanced reasoning to complete your task and answer the question. Think about how you can use the provided tools to answer the question and come up with a high level plan you will execute.\nWrite \'Plan:\' followed by an initial high level plan of how you will solve the problem including the tools and steps required.\nSecondly, Carry out your plan by repeatedly using actions, reasoning over the results, and re-evaluating your plan. Perform Action, Observation, Reflection steps with the following format. Write \'Action:\' followed by a json formatted action containing the "tool_name" and "parameters"\n Next you will analyze the \'Observation:\', this is the result of the action.\nAfter that you should always think about what to do next. Write \'Reflection:\' followed by what you\'ve figured out so far, any changes you need to make to your plan, and what you will do next including if you know the answer to the question.\n... (this Action/Observation/Reflection can repeat N times)\nThirdly, Decide which of the retrieved documents are relevant to the user\'s last input by writing \'Relevant Documents:\' followed by comma-separated list of document numbers. If none are relevant, you should instead write \'None\'.\nFourthly, Decide which of the retrieved documents contain facts that should be cited in a good answer to the user\'s last input by writing \'Cited Documents:\' followed a comma-separated list of document numbers. If you dont want to cite any of them, you should instead write \'None\'.\nFifthly, Write \'Answer:\' followed by a response to the user\'s last input in high quality natural english. Use the retrieved documents to help you. Do not insert any citations or grounding markup.\nFinally, Write \'Grounded answer:\' followed by a response to the user\'s last input in high quality natural english. Use the symbols <co: doc> and </co: doc> to indicate when a fact comes from a document in the search result, e.g <co: 4>my fact</co: 4> for a fact from document 4."
-        },
-        {
             "role": "assistant", 
             "content": "Plan: First, I will use the random_operation_tool to calculate the result of the random operation between 10 and 20. Then, I will search for fun facts about the resulting number, as well as its prime factors.", 
             "tool_calls": [
                 {
-                  "id": "",
-                  "function": { 
+                "id": "",
+                "function": { 
                     "name": "random_operation", 
-                    "arguments": "{\"a\": \"10\", \"b\": \"20\"}"
-                  },
-                  "type": "function"
+                    "arguments": "{\"a\": 10, \"b\": 20}"
+                },
+                "type": "function"
                 }
             ]
         },
@@ -31,9 +27,9 @@
             "name": "internet_search",
             "role": "tool",
             "tool_call_id": "",
-            "content": "[{\"text\", \"Output: 200\"}]"
+            "content": "[{\"text\": \"Output: 200\"}]"
         }
-    ]
+    ],
     "tools": [
         {
             "type": "function",
@@ -96,7 +92,7 @@
                         "b": {
                             "type": "int",
                             "description": "Second input"
-                        },          
+                        }          
                     },
                     "required": [
                         "a", "b"
