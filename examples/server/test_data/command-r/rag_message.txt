@@ -1,5 +1,5 @@
 {
-    "model": "command-r-v01",
+    "model": "command-r-plus-104b",
     "messages": [
         {
             "role": "user",
@@ -9,7 +9,7 @@
             "name": "rag",
             "role": "tool",
             "tool_call_id": "call_abcde1",
-            "content": "Document: 0\ntitle: Tall penguins\nEmperor penguins are the tallest growing up to 122 cm in height.\n\nDocument: 1\ntitle: Penguin habitats\nEmperor penguins only live in Antarctica."
+            "content": "[{\"title\": \"Tall penguins\", \"text\": \"Emperor penguins are the tallest growing up to 122 cm in height.\"}]"
         }
     ]
 }

@@ -3,31 +3,11 @@
     "messages": [
         {
             "role": "system",
-            "content": "\nYou are an expert who answers the user's question with the most relevant datasource. You are equipped with an internet search tool and a special vectorstore of information about how to write good essays.\nYou also have a 'random_operation_tool' tool, you must use it to compute the random operation between two numbers."
+            "content": "You are an expert who answers the user's question with the most relevant datasource. You are equipped with an internet search tool and a special vectorstore of information about how to write good essays.\nYou also have a 'random_operation_tool' tool, you must use it to compute the random operation between two numbers."
         },
         {
             "role": "user",
-            "content": "Calculate the result of the random operation of 10 and 20. Then find a few fun facts about that number, as well as its prime factors."
-        },
-        {
-            "role": "assistant", 
-            "content": "Plan: First, I will use the random_operation_tool to calculate the result of the random operation between 10 and 20. Then, I will search for fun facts about the resulting number, as well as its prime factors.", 
-            "tool_calls": [
-                {
-                "id": "",
-                "function": { 
-                    "name": "random_operation", 
-                    "arguments": "{\"a\": 10, \"b\": 20}"
-                },
-                "type": "function"
-                }
-            ]
-        },
-        {
-            "name": "internet_search",
-            "role": "tool",
-            "tool_call_id": "",
-            "content": "[{\"text\": \"Output: 200\"}]"
+            "content": "write a bubbl sort"
         }
     ],
     "tools": [
@@ -92,7 +72,7 @@
                         "b": {
                             "type": "int",
                             "description": "Second input"
-                        }          
+                        }        
                     },
                     "required": [
                         "a", "b"

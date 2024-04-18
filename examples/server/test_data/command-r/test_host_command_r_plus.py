@@ -1,6 +1,7 @@
 from openai import OpenAI
 import cohere
 import requests
+import json
 
 
 def test1():
@@ -58,10 +59,31 @@ def test3():
   print(response)
 
 
+def test4(input_file):
+    client = OpenAI(
+        api_key="dummy",
+        base_url="http://34.87.129.78:9100/v1")
+        
+    body = json.load(open(input_file))
+    completion = client.chat.completions.create(
+        model="command-r-plus-104b",
+        messages=body["messages"],
+        tools=body["tools"],
+        temperature=0.3,
+        # tool_choice="none",
+    )
+
+    print('\n---Dailog round---')
+    print(">>>Q: xxx\n>>>Bot: {}".format([completion.choices[0].message]))
+
 #test1()
 #test2('raw_prompt1.txt')
 #test2('raw_prompt2.txt')
 #test2('raw_prompt3.txt')
 
 #test30()
-test3()
+#test3()
+
+test4('./oai_round1_message.txt')   
+test4('./oai_round2_message.txt')   
+# test4('./oai_round3_message.txt')
