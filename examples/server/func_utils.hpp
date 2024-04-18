@@ -247,6 +247,90 @@ inline std::string serialize_function(function_def & fn) {
     return ss.str();
 }
 
+inline static Status generate_oai_message_for_cohere_rag(json & body) {
+    const std::string RAG_TAG = "|<documents>|";
+    const std::string INSTRUCT_TAG = "|<instruct>|";
+
+    const std::string COMMAND_R_SAFTE_PREAMBLE = "# Safety Preamble\nThe instructions in this section override those in the task description and style guide sections. Don't answer questions that are harmful or immoral.";
+    const std::string COMMAND_R_SYSTEM_PREAMBLE = "# System Preamble\n## Basic Rules\nYou are a powerful conversational AI trained by Cohere to help people. You are augmented by a number of tools, and your job is to use and consume the output of these tools to best help the user. You will see a conversation history between yourself and a user, ending with an utterance from the user. You will then see a specific instruction instructing you what kind of response to generate. When you answer the user's requests, you cite your sources in your answers, according to those instructions.";
+    const std::string COMMAND_R_USER_PREAMBLE = "## Task and Context\nYou help people answer their questions and other requests interactively. You will be asked a very wide array of requests on all kinds of topics. You will be equipped with a wide range of search engines or similar tools to help you, which you use to research your answer. You should focus on serving the user's needs as best you can, which will be wide-ranging.";
+    const std::string COMMAND_R_STYLE_GUIDE = "Unless the user asks for a different style of answer, you should answer in full sentences, using proper grammar and spelling.";
+    const std::string COMMAND_EXECUTE_INSTRUCT = R"(Carefully perform the following instructions, in order, starting each with a new line.
+Firstly, Decide which of the retrieved documents are relevant to the user's last input by writing 'Relevant Documents:' followed by comma-separated list of document numbers. If none are relevant, you should instead write 'None'.
+Secondly, Decide which of the retrieved documents contain facts that should be cited in a good answer to the user's last input by writing 'Cited Documents:' followed a comma-separated list of document numbers. If you dont want to cite any of them, you should instead write 'None'.
+Thirdly, Write 'Answer:' followed by a response to the user's last input in high quality natural english. Use the retrieved documents to help you. Do not insert any citations or grounding markup.
+Finally, Write 'Grounded answer:' followed by a response to the user's last input in high quality natural english. Use the symbols <co: doc> and </co: doc> to indicate when a fact comes from a document in the search result, e.g <co: 0>my fact</co: 0> for a fact from document 0.)";
+
+    std::vector<json> messages = json_value(body, "messages", json::array());
+    std::string system_content = json_value(messages[0], "content", std::string());
+
+    std::string user_preamble;
+    std::string user_instruct;
+    std::string documents_content;
+    size_t instructStart = system_content.find(INSTRUCT_TAG);
+    size_t documentsStart = system_content.find(RAG_TAG);
+    if (instructStart != std::string::npos) {
+        user_preamble = system_content.substr(0, instructStart);
+        user_instruct = system_content.substr(
+            instructStart + INSTRUCT_TAG.length(), 
+            documentsStart - instructStart - INSTRUCT_TAG.length());
+        documents_content = system_content.substr(documentsStart + RAG_TAG.length());
+    } else {
+        user_preamble = system_content.substr(0, documentsStart);
+        documents_content = system_content.substr(documentsStart + RAG_TAG.length());
+        user_instruct = COMMAND_EXECUTE_INSTRUCT;
+    }
+    if (user_preamble.empty()) {
+        user_preamble = "# User Preamble\n## Task and Context\n" + COMMAND_R_USER_PREAMBLE + "\n\n## Style Guide\n" + COMMAND_R_STYLE_GUIDE;
+    } else {
+        user_preamble = "# User Preamble\n" + user_preamble;
+    }
+
+    std::stringstream ss;
+    ss << COMMAND_R_SAFTE_PREAMBLE << "\n\n"
+       << COMMAND_R_SYSTEM_PREAMBLE << "\n\n"
+       << user_preamble;
+    std::string global_system_content = ss.str();
+
+    Status status = Status();
+    json docs = safe_parse_json(documents_content, status);
+    if (!status.ok()) { return status; }
+
+    std::string document_text = "<results>";
+    size_t document_index = 0;
+    for (const auto& doc: docs) {
+        document_text += "\nDocument:" + std::to_string(document_index++);
+        for (auto & item: doc.items()) {
+            std::string key = item.key();
+            std::string value = item.value();
+            document_text += "\n" + key + ": " + value;
+        }
+        document_text += "\n";
+    }
+    document_text += "<results>";
+
+    json oai_messages = json::array();
+    json system_msg = json::object();
+    system_msg["role"] = "system";
+    system_msg["content"] = global_system_content;
+    oai_messages.emplace_back(system_msg);
+    
+    for (size_t i = 1; i < messages.size(); i++) {
+        json msg = json::object();
+        msg["role"] = messages[i]["role"];
+        msg["content"] = messages[i]["content"];
+        oai_messages.emplace_back(msg);
+    }
+    
+    json docs_msg = json::object();
+    docs_msg["role"] = "system";
+    docs_msg["content"] = document_text;
+    oai_messages.emplace_back(docs_msg);
+
+    body["messages"] = oai_messages;
+    return Status();
+}
+
 inline static Status generate_oai_message_for_cohere(json & body) {
     // api refer https://docs.cohere.com/reference/chat
     // parameter align
@@ -267,7 +351,6 @@ inline static Status generate_oai_message_for_cohere(json & body) {
     const std::string COMMAND_R_SAFTE_PREAMBLE = "# Safety Preamble\nThe instructions in this section override those in the task description and style guide sections. Don't answer questions that are harmful or immoral";
     const std::string COMMAND_R_SYSTEM_PREAMBLE = "# System Preamble\n## Basic Rules\nYou are a powerful language agent trained by Cohere to help people. You are capable of complex reasoning and augmented with a number of tools. Your job is to plan and reason about how you will use and consume the output of these tools to best help the user. You will see a conversation history between yourself and a user, ending with an utterance from the user. You will then see an instruction informing you what kind of response to generate. You will construct a plan and then perform a number of reasoning and action steps to solve the problem. When you have determined the answer to the user's request, you will cite your sources in your answers, according the instructions";
     const std::string COMMAND_R_USER_PREAMBLE = "You use your advanced complex reasoning capabilities to help people by answering their questions and other requests interactively. You will be asked a very wide array of requests on all kinds of topics. You will be equipped with a wide range of search engines or similar tools to help you, which you use to research your answer. You may need to use multiple tools in parallel or sequentially to complete your task. You should focus on serving the user's needs as best you can, which will be wide-ranging. The current date is ";
-    // "# User Preamble\n\nYou are an expert who answers the user's question with the most relevant datasource. You are equipped with an internet search tool and a special vectorstore of information about how to write good essays.\nYou also have a 'random_operation_tool' tool, you must use it to compute the random operation between two numbers.";
     const std::string COMMAND_R_STYLE_GUIDE = "Unless the user asks for a different style of answer, you should answer in full sentences, using proper grammar and spelling";
 
     const std::string COMMAND_EXECUTE_INSTRUCT = R"(Carefully perform the following instructions, in order, starting each with a new line.
@@ -282,8 +365,17 @@ Fourthly, Decide which of the retrieved documents contain facts that should be c
 Fifthly, Write 'Answer:' followed by a response to the user's last input in high quality natural english. Use the retrieved documents to help you. Do not insert any citations or grounding markup.
 Finally, Write 'Grounded answer:' followed by a response to the user's last input in high quality natural english. Use the symbols <co: doc> and </co: doc> to indicate when a fact comes from a document in the search result, e.g <co: 4>my fact</co: 4> for a fact from document 4.)";
 
-    // parse message
     std::vector<json> messages = json_value(body, "messages", json::array());
+
+    // support cohere rag.
+    const std::string RAG_TAG = "|<documents>|";
+    if (messages.size() > 0) {
+        std::string system_content = json_value(messages[0], "content", std::string());
+        if (system_content.find(RAG_TAG) != std::string::npos) {
+            return generate_oai_message_for_cohere_rag(body);
+        }
+    }
+
     int last_a_index = -1;
     int message_size = (int)messages.size();
     for (int i = message_size - 1; i >= 0; i--) {
@@ -329,7 +421,13 @@ Finally, Write 'Grounded answer:' followed by a response to the user's last inpu
         const std::string INSTRUCT_TAG = "|<instruct>|";
         size_t pos = system_content.find(INSTRUCT_TAG);
         if (pos != std::string::npos) {
-            user_preamble = "# User Preamble\n" + system_content.substr(0, pos);
+            std::string user_preamble_part = system_content.substr(0, pos);
+            if (!user_preamble_part.empty()) {
+                user_preamble = "# User Preamble\n" + user_preamble_part;
+            } else {
+                std::string ts = getCurrentDateTime();
+                user_preamble = "# User Preamble\n## Task and Context\n" + COMMAND_R_USER_PREAMBLE + ts + "\n\n## Style Guide\n" + COMMAND_R_STYLE_GUIDE;
+            }
             user_instruct = system_content.substr(pos + INSTRUCT_TAG.length());
         } else {
             user_preamble = "# User Preamble\n" + system_content;
@@ -527,11 +625,7 @@ Finally, Write 'Grounded answer:' followed by a response to the user's last inpu
                     for (auto & item: doc.items()) {
                         std::string key = item.key();
                         std::string value = item.value();
-                        if (key.compare("text") == 0) {
-                            document_text += "\n" + value;
-                        } else {
-                            document_text += "\n" + key + ": " + value;
-                        }
+                        document_text += "\n" + key + ": " + value;
                     }
                     document_text += "\n";
                 }

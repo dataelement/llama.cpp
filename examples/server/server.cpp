@@ -3516,7 +3516,7 @@ int main(int argc, char ** argv) {
         json data = oaicompat_completion_params_parse(ctx_server.model, body, sparams.chat_template);
 
         std::cout << "---body---\n[" << req.body  << "]\n";
-        std::cout << "---prompt---\n" << data["prompt"].get<std::string>() << "\n";
+        std::cout << "---prompt---\n[" << data["prompt"] << "]\n";
 
         // json data = oaicompat_completion_params_parse(ctx_server.model, json::parse(req.body), sparams.chat_template);
 
