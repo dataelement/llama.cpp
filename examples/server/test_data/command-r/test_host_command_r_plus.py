@@ -76,6 +76,27 @@ def test4(input_file):
     print('\n---Dailog round---')
     print(">>>Q: xxx\n>>>Bot: {}".format([completion.choices[0].message]))
 
+
+def test5():
+    client = OpenAI(
+        api_key="dummy",
+        base_url="http://127.0.0.1:9100/v1")
+
+    prompt1 = '周树人为什么要打鲁迅？'
+    prompt2 = '什么是鸡笼问题'
+    prompt3 = """who are you?"""
+    messages = [{'role': 'user', 'content': prompt3}]
+    completion = client.chat.completions.create(
+        model="command-r-plus-104b",
+        messages=messages,
+        temperature=0.3,
+        # tool_choice="none",
+    )
+
+    print('\n---Dailog round---')
+    print(">>>Q: {}\n>>>Bot: {}".format(messages[0]['content'], [completion.choices[0].message]))
+
+
 #test1()
 #test2('raw_prompt1.txt')
 #test2('raw_prompt2.txt')
@@ -85,5 +106,6 @@ def test4(input_file):
 #test3()
 
 # test4('./oai_round1_message.txt')   
-test4('./oai_round2_message.txt')   
+# test4('./oai_round2_message.txt')
 # test4('./oai_round3_message.txt')
+test5()

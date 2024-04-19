@@ -114,7 +114,7 @@ You also have a 'random_operation_tool' tool, you must use it to compute the ran
     # response['output']
 
     response = agent_executor.invoke({
-       "input": "write a bubble sort",
+       "input": "write a bubble sort and a quick sort algorithm in python.",
        "preamble": preamble,
     })
 

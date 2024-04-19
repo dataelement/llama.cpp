@@ -3531,7 +3531,8 @@ int main(int argc, char ** argv) {
 
             if (!result.error && result.stop) {
                 json result_oai = format_final_response_oaicompat(data, result.data, completion_id);
-
+                std::cout << "---completion---\n[" << result_oai["choices"][0]["message"] << "]\n";
+                
                 std::string tool_choice = llama_functionary::json_value(body, "tool_choice", std::string());
                 bool has_right_oai_response = true;
                 if (tool_choice.compare("none") != 0) {
