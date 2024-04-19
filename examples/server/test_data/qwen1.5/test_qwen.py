@@ -4,7 +4,7 @@ from openai import OpenAI
 def test1(round):
     client = OpenAI(
         api_key="dummy",
-        base_url="http://34.87.129.78:9301/v1")
+        base_url="http://127.0.0.1:9300/v1")
 
     system_prompt = open("./qwen1.5_system.txt").read()
     u1 = "What is the capital of France?"
@@ -32,7 +32,7 @@ def test1(round):
 def test2(round):
     client = OpenAI(
         api_key="dummy",
-        base_url="http://34.87.129.78:9301/v1")
+        base_url="http://127.0.0.1:9300/v1")
         
     body = json.load(open('./round{}_message.txt'.format(round)))
     completion = client.chat.completions.create(
@@ -49,7 +49,7 @@ def test2(round):
 def test_qwen_round(round):
     client = OpenAI(
         api_key="dummy",
-        base_url="http://34.87.129.78:9301/v1")
+        base_url="http://127.0.0.1:9300/v1")
 
     system_prompt = open("./qwen1.5_system.txt").read()
     user_prompt = open('./qwen1.5_u{}.txt'.format(round)).read()
@@ -69,14 +69,14 @@ def test_qwen_round(round):
 def test4(input_file):
     client = OpenAI(
         api_key="dummy",
-        base_url="http://34.87.129.78:9301/v1")
+        base_url="http://127.0.0.1:9300/v1")
         
     body = json.load(open(input_file))
     completion = client.chat.completions.create(
         model="qwen1.5-72b-chat",
         messages=body["messages"],
         tools=body["tools"],
-        temperature=0,
+        temperature=0.1,
         # tool_choice="none",
     )
 
@@ -94,4 +94,5 @@ def test4(input_file):
 # test_qwen_round(2)
 # test_qwen_round(3)
 # test4('./round1.json')
-test4('./round2.json')
+# test4('./round2.json')
+test4('./case1.json')
