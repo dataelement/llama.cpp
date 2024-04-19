@@ -18,6 +18,7 @@ function prepare() {
 }
 
 function commit_image() {
+    docker rmi dataelement/bisheng-rt-llamacpp:latest
     docker cp build/bin/server llamacpp-rt:/opt/llamacpp/bin/llamacpp_server
     docker commit -m "llamacpp image" llamacpp-rt dataelement/bisheng-rt-llamacpp:latest
     docker push dataelement/bisheng-rt-llamacpp:latest
@@ -32,5 +33,5 @@ function build() {
 }
 
 # prepare
-# commit_image
-build
+commit_image
+# build
