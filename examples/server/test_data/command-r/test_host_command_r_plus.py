@@ -84,6 +84,6 @@ def test4(input_file):
 #test30()
 #test3()
 
-test4('./oai_round1_message.txt')   
+# test4('./oai_round1_message.txt')   
 test4('./oai_round2_message.txt')   
 # test4('./oai_round3_message.txt')

@@ -27,7 +27,7 @@
             "name": "internet_search",
             "role": "tool",
             "tool_call_id": "",
-            "content": "[{\"text\": \"Output: 200\"}]"
+            "content": "[{\"Output\": \"200\"}]"
         }
     ],
     "tools": [

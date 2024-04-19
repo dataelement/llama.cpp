@@ -517,7 +517,7 @@ Finally, Write 'Grounded answer:' followed by a response to the user's last inpu
            << COMMAND_R_SYSTEM_PREAMBLE << "\n\n"
            << user_preamble << "\n\n\n";
         
-        ss << tools_def_context << "\n";
+        ss << tools_def_context;
 
         global_system_content = ss.str();
     
@@ -634,7 +634,7 @@ Finally, Write 'Grounded answer:' followed by a response to the user's last inpu
                     }
                     document_text += "\n";
                 }
-                document_text += "<results>";
+                document_text += "</results>";
 
                 json oai_t_msg = json::object();
                 oai_t_msg["role"] = "system";
@@ -942,7 +942,7 @@ inline static Status convert_oai_response_for_cohere(json& response) {
         tool_call["id"] = "call_" + random_string(25);
         tool_call["function"] = json::object();
         tool_call["function"]["name"] = toolCall["tool_name"];
-        tool_call["function"]["arguments"] = toolCall["parameters"];
+        tool_call["function"]["arguments"] = toolCall["parameters"].dump_style();
         tool_call["type"] = "function";
         tool_calls.emplace_back(tool_call);
     }
