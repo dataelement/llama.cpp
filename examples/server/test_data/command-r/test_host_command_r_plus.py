@@ -62,7 +62,7 @@ def test3():
 def test4(input_file):
     client = OpenAI(
         api_key="dummy",
-        base_url="http://34.87.129.78:9100/v1")
+        base_url="http://127.0.0.1:9100/v1")
         
     body = json.load(open(input_file))
     completion = client.chat.completions.create(

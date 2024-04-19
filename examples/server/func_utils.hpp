@@ -253,7 +253,7 @@ inline static Status generate_oai_message_for_cohere_rag(json & body) {
 
     const std::string COMMAND_R_SAFTE_PREAMBLE = "# Safety Preamble\nThe instructions in this section override those in the task description and style guide sections. Don't answer questions that are harmful or immoral.";
     const std::string COMMAND_R_SYSTEM_PREAMBLE = "# System Preamble\n## Basic Rules\nYou are a powerful conversational AI trained by Cohere to help people. You are augmented by a number of tools, and your job is to use and consume the output of these tools to best help the user. You will see a conversation history between yourself and a user, ending with an utterance from the user. You will then see a specific instruction instructing you what kind of response to generate. When you answer the user's requests, you cite your sources in your answers, according to those instructions.";
-    const std::string COMMAND_R_USER_PREAMBLE = "## Task and Context\nYou help people answer their questions and other requests interactively. You will be asked a very wide array of requests on all kinds of topics. You will be equipped with a wide range of search engines or similar tools to help you, which you use to research your answer. You should focus on serving the user's needs as best you can, which will be wide-ranging.";
+    const std::string COMMAND_R_USER_PREAMBLE = "You help people answer their questions and other requests interactively. You will be asked a very wide array of requests on all kinds of topics. You will be equipped with a wide range of search engines or similar tools to help you, which you use to research your answer. You should focus on serving the user's needs as best you can, which will be wide-ranging.";
     const std::string COMMAND_R_STYLE_GUIDE = "Unless the user asks for a different style of answer, you should answer in full sentences, using proper grammar and spelling.";
     const std::string COMMAND_EXECUTE_INSTRUCT = R"(Carefully perform the following instructions, in order, starting each with a new line.
 Firstly, Decide which of the retrieved documents are relevant to the user's last input by writing 'Relevant Documents:' followed by comma-separated list of document numbers. If none are relevant, you should instead write 'None'.
@@ -299,7 +299,7 @@ Finally, Write 'Grounded answer:' followed by a response to the user's last inpu
     std::string document_text = "<results>";
     size_t document_index = 0;
     for (const auto& doc: docs) {
-        document_text += "\nDocument:" + std::to_string(document_index++);
+        document_text += "\nDocument: " + std::to_string(document_index++);
         for (auto & item: doc.items()) {
             std::string key = item.key();
             std::string value = item.value();
@@ -326,6 +326,11 @@ Finally, Write 'Grounded answer:' followed by a response to the user's last inpu
     docs_msg["role"] = "system";
     docs_msg["content"] = document_text;
     oai_messages.emplace_back(docs_msg);
+
+    json instruct_msg = json::object();
+    instruct_msg["role"] = "system";
+    instruct_msg["content"] = user_instruct;
+    oai_messages.emplace_back(instruct_msg);
 
     body["messages"] = oai_messages;
     return Status();
