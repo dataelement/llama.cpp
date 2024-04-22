@@ -1,0 +1,9 @@
+<results>
+Document: 0
+title: Tall penguins
+Emperor penguins are the tallest growing up to 122 cm in height.
+
+Document: 1
+title: Penguin habitats
+Emperor penguins only live in Antarctica.
+</results>

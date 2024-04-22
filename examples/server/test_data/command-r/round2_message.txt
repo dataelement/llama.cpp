@@ -1,0 +1,58 @@
+{
+    "model": "command-r-v01",
+    "messages": [
+        {
+            "role": "user",
+            "content": "Whats the biggest penguin in the world?"
+        },
+       {
+            "role": "assistant", 
+            "content": null, 
+            "tool_calls": [
+                {
+                  "id": "",
+                  "function": { 
+                    "name": "internet_search", 
+                    "arguments": "{\"query\": \"biggest penguin in the world\"}"
+                  },
+                  "type": "function"
+                }
+            ]
+        },
+        {
+            "name": "internet_search",
+            "role": "tool",
+            "tool_call_id": "call_abcde1",
+            "content": "Document: 0\ntitle: Tall penguins\nEmperor penguins are the tallest growing up to 122 cm in height.\n\nDocument: 1\ntitle: Penguin habitats\nEmperor penguins only live in Antarctica."
+        }
+    ],
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "name": "internet_search",
+                "description": "Returns a list of relevant document snippets for a textual query retrieved from the internet",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Query to search the internet with"
+                        }
+                    },
+                    "required": [
+                        "query"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "directly_answer",
+                "description": "Calls a standard (un-augmented) AI chatbot to generate a response given the conversation history",
+                "parameters": {}
+            }
+        }
+    ]
+}

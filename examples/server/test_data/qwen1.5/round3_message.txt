@@ -1,0 +1,89 @@
+{
+    "model": "qwen1.5",
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": "What's the weather like in San Francisco and Paris?"
+        },
+        {
+            "role": "assistant", 
+            "content": null, 
+            "tool_calls": [
+                {
+                  "id": "",
+                  "function": { 
+                    "name": "get_current_weather", 
+                    "arguments": "{\"location\": \"San Francisco, CA\", \"unit\": \"celsius\"}"
+                  },
+                  "type": "function"
+                }
+            ]
+        },
+        {
+            "name": "get_current_weather",
+            "role": "tool",
+            "tool_call_id": "",
+            "content": "{\"location\": \"San Francisco\", \"temperature\": \"72\", \"unit\": \"fahrenheit\"}"
+        },
+        {
+            "role": "assistant", 
+            "content": null, 
+            "tool_calls": [
+                {
+                  "id": "",
+                  "function": { 
+                    "name": "get_current_weather", 
+                    "arguments": "{\"location\": \"Paris, France\", \"unit\": \"celsius\"}"
+                  },
+                  "type": "function"
+                }
+            ]
+        },
+        {
+            "name": "get_current_weather",
+            "role": "tool",
+            "tool_call_id": "",
+            "content": "{\"location\": \"Paris\", \"temperature\": \"22\", \"unit\": \"celsius\"}"
+        }
+    ],
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_current_weather",
+                "description": "Get the current weather in a given location",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "description": "The city and state, e.g. San Francisco, CA"
+                        },
+                        "unit": {
+                            "type": "string",
+                            "enum": [
+                                "celsius",
+                                "fahrenheit"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "location"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_current_time",
+                "description": "当你想知道现在的时间时非常有用。",
+                "parameters": {}
+            }
+        }
+    ]
+}

@@ -13,6 +13,14 @@ set(PUBLIC_ASSETS
     completion.js
     json-schema-to-grammar.mjs
 )
+
+add_executable(func_utils_test
+    func_utils_test.cpp
+    func_utils.hpp
+)
+
+target_link_libraries(func_utils_test PRIVATE common ${CMAKE_THREAD_LIBS_INIT})
+
 foreach(asset ${PUBLIC_ASSETS})
     set(input "${CMAKE_CURRENT_SOURCE_DIR}/public/${asset}")
     set(output "${CMAKE_CURRENT_BINARY_DIR}/${asset}.hpp")

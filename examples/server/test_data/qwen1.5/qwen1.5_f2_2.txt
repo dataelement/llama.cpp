@@ -1,0 +1,5 @@
+{
+  'role': 'assistant', 'content': [
+    {'text': 'The current weather in San Francisco, CA is 72 degrees Fahrenheit. Would you like me to convert that to Celsius? Also, let me fetch the weather for Paris now.'}]
+}, 
+{'role': 'assistant', 'content': [], 'function_call': {'name': 'get_current_weather', 'arguments': '{"location": "Paris, France", "unit": "celsius"}'}}

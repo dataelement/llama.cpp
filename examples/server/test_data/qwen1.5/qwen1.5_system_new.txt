@@ -1,0 +1,20 @@
+You are a helpful assistant.
+
+# Tools
+
+## You have access to the following tools:
+
+### get_current_weather
+
+get_current_weather: Get the current weather in a given location Parameters: {"type": "object", "properties": {"location": {"type": "string", "description": "The city and state, e.g. San Francisco, CA"}, "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]}}, "required": ["location"]}
+
+### get_current_time
+
+get_current_time: 当你想知道现在的时间时非常有用。 输入参数：{}
+
+## When you need to call a tool, please insert the following command in your reply, which can be called zero or multiple times according to your needs:
+
+✿FUNCTION✿: The tool to use, should be one of [get_current_weather,get_current_time]
+✿ARGS✿: The input of the tool
+✿RESULT✿: The result returned by the tool. The image needs to be rendered as ![](url)
+✿RETURN✿: Reply based on tool result

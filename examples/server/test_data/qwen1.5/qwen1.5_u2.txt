@@ -1,0 +1,7 @@
+What's the weather like in San Francisco and Paris?
+
+
+✿FUNCTION✿: get_current_weather
+✿ARGS✿: {"location": "San Francisco, CA", "unit": "celsius"}
+✿RESULT✿: {"location": "San Francisco", "temperature": "72", "unit": "fahrenheit"}
+✿RETURN✿

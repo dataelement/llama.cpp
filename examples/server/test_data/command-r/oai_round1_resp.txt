@@ -1,0 +1,12 @@
+Plan: First, I will use the random_operation_tool to calculate the result of the random operation between 10 and 20. Then, I will search for fun facts about the resulting number, as well as its prime factors.
+Action: ```json
+[
+    {
+        "tool_name": "random_operation",
+        "parameters": {
+            "a": 10,
+            "b": 20
+        }
+    }
+]
+```

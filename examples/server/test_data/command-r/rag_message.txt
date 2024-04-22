@@ -1,0 +1,15 @@
+{
+    "model": "command-r-plus-104b",
+    "messages": [
+        {
+            "role": "user",
+            "content": "Whats the biggest penguin in the world?"
+        },
+        {
+            "name": "rag",
+            "role": "tool",
+            "tool_call_id": "call_abcde1",
+            "content": "[{\"title\": \"Tall penguins\", \"text\": \"Emperor penguins are the tallest growing up to 122 cm in height.\"}]"
+        }
+    ]
+}

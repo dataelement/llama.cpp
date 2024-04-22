@@ -1,0 +1,159 @@
+<BOS_TOKEN><|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|># Safety Preamble
+The instructions in this section override those in the task description and style guide sections. Don't answer questions that are harmful or immoral
+
+# System Preamble
+## Basic Rules
+You are a powerful language agent trained by Cohere to help people. You are capable of complex reasoning and augmented with a number of tools. Your job is to plan and reason about how you will use and consume the output of these tools to best help the user. You will see a conversation history between yourself and a user, ending with an utterance from the user. You will then see an instruction informing you what kind of response to generate. You will construct a plan and then perform a number of reasoning and action steps to solve the problem. When you have determined the answer to the user's request, you will cite your sources in your answers, according the instructions
+
+# User Preamble
+
+You are an expert who answers the user's question with the most relevant datasource. You are equipped with an internet search tool and a special vectorstore of information about how to write good essays.
+You also have a 'random_operation_tool' tool, you must use it to compute the random operation between two numbers.
+
+
+## Available Tools
+Here is a list of tools that you have available to you:
+
+```python
+def directly_answer() -> List[Dict]:
+    """Calls a standard (un-augmented) AI chatbot to generate a response given the conversation history
+    """
+    pass
+```
+
+```python
+def internet_search(query: str) -> List[Dict]:
+    """Returns a list of relevant document snippets for a textual query retrieved from the internet.
+
+    Args:
+        query (str): Query to search the internet with
+    """
+    pass
+```
+
+```python
+def python_interpreter(code: str) -> List[Dict]:
+    """Executes python code and returns the result. The code runs in a static sandbox without interactive mode, so print output or save output to a file.
+
+    Args:
+        code (str): Python code to execute.
+    """
+    pass
+```
+
+```python
+def random_operation(a: int, b: int) -> List[Dict]:
+    """Calculates a random operation between the inputs.
+
+    Args:
+        a (int): First input
+        b (int): Second input
+    """
+    pass
+```<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|>Calculate the result of the random operation of 10 and 20. Then find a few fun facts about that number, as well as its prime factors.<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>Carefully perform the following instructions, in order, starting each with a new line.
+Firstly, You may need to use complex and advanced reasoning to complete your task and answer the question. Think about how you can use the provided tools to answer the question and come up with a high level plan you will execute.
+Write 'Plan:' followed by an initial high level plan of how you will solve the problem including the tools and steps required.
+Secondly, Carry out your plan by repeatedly using actions, reasoning over the results, and re-evaluating your plan. Perform Action, Observation, Reflection steps with the following format. Write 'Action:' followed by a json formatted action containing the "tool_name" and "parameters"
+ Next you will analyze the 'Observation:', this is the result of the action.
+After that you should always think about what to do next. Write 'Reflection:' followed by what you've figured out so far, any changes you need to make to your plan, and what you will do next including if you know the answer to the question.
+... (this Action/Observation/Reflection can repeat N times)
+Thirdly, Decide which of the retrieved documents are relevant to the user's last input by writing 'Relevant Documents:' followed by comma-separated list of document numbers. If none are relevant, you should instead write 'None'.
+Fourthly, Decide which of the retrieved documents contain facts that should be cited in a good answer to the user's last input by writing 'Cited Documents:' followed a comma-separated list of document numbers. If you dont want to cite any of them, you should instead write 'None'.
+Fifthly, Write 'Answer:' followed by a response to the user's last input in high quality natural english. Use the retrieved documents to help you. Do not insert any citations or grounding markup.
+Finally, Write 'Grounded answer:' followed by a response to the user's last input in high quality natural english. Use the symbols <co: doc> and </co: doc> to indicate when a fact comes from a document in the search result, e.g <co: 4>my fact</co: 4> for a fact from document 4.<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>Plan: First, I will use the random_operation_tool to calculate the result of the random operation between 10 and 20. Then, I will search for fun facts about the resulting number, as well as its prime factors.
+Action: ```json
+[
+    {
+        "tool_name": "random_operation",
+        "parameters": {
+            "a": 10,
+            "b": 20
+        }
+    }
+]
+```<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|><results>
+Document: 0
+Output: 200
+</results><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>Reflection: The result of the random operation is 200. Now, I will search for fun facts about the number 200 and its prime factors.
+Action: ```json
+[
+    {
+        "tool_name": "internet_search",
+        "parameters": {
+            "query": "fun facts about number 200"
+        }
+    },
+    {
+        "tool_name": "internet_search",
+        "parameters": {
+            "query": "prime factors of 200"
+        }
+    }
+]
+```<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|><results>
+Document: 1
+URL: https://numbermatics.com/n/200/
+Content: Mathematical info, prime factorization, fun facts and numerical data for STEM, education and fun. Your guide to the number 200, an even composite number composed of two distinct primes. Mathematical info, prime factorization, fun facts and numerical data for STEM, education and fun. ... Number 200 - Facts about the integer. Retrieved 13 April ...
+
+Document: 2
+URL: https://www.archimedes-lab.org/numbers/Num70_200.html
+Content: With 189 pages filled with an incredible variety of fun facts on numbers (and their peculiar properties), both mathematical and cultural, as well as tantalizing problems and anecdotes, there is much to learn for everyone. ... The number 200, according to Bullinger's study of biblical literature, signifies 'insufficiency'. The word 200 (ducenti) ...
+
+Document: 3
+URL: https://en.wikipedia.org/wiki/200_(number)
+Content: In mathematics. 200 is an abundant number, as 265, the sum of its proper divisors, is greater than itself. The number appears in the Padovan sequence, preceded by 86, 114, 151 (it is the sum of the first two of these). [1] The sum of Euler's totient function φ ( x) over the first twenty-five integers is 200.
+
+Document: 4
+URL: https://www.theguardian.com/childrens-books-site/2014/sep/21/top-10-numbers-for-random-facts-adam-frost
+Content: Adam Frost, data nerd and the author of The Awesome Book on Awesomeness, reveals awesome number facts to wow your friends with Adam Frost Sun 21 Sep 2014 04.00 EDT Last modified on Wed 20 Sep 2017 ...
+
+Document: 5
+URL: https://www.express.co.uk/life-style/top10facts/690340/Top-10-facts-number-200
+Content: Top 10 facts about the number 200 TODAY is the 200th day of 2016, so to celebrate let's have some facts about the number 200. By WILLIAM HARTSTON. 00:01, Mon, Jul 18, 2016.
+</results><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>Reflection: The result of the random operation is 200. Now, I will search for fun facts about the number 200 and its prime factors.
+Action: ```json
+[
+    {
+        "tool_name": "internet_search",
+        "parameters": {
+            "query": "fun facts about number 200"
+        }
+    },
+    {
+        "tool_name": "internet_search",
+        "parameters": {
+            "query": "prime factors of 200"
+        }
+    }
+]
+```<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|><results>
+Document: 6
+URL: https://calculat.io/en/number/prime-factors-of/200
+Content: Here is the complete solution of finding Prime Factors of 200: The smallest Prime Number which can divide 200 without a remainder is 2. So the first calculation step would look like: 200 ÷ 2 = 100. Now we repeat this action until the result equals 1: 100 ÷ 2 = 50. 50 ÷ 2 = 25.
+
+Document: 7
+URL: https://math.tools/numbers/prime-factors/200
+Content: Find the prime factors of 200 and their multiplicities using integer factorization. The prime factors of 200 are 2x2x2 and 5x5.
+
+Document: 8
+URL: https://www.cuemath.com/numbers/factors-of-200/
+Content: Learn how to find the factors of 200, including positive and negative ones, by using pairs of numbers or prime factorization. See solved examples of using factors of 200 in real-life situations.
+
+Document: 9
+URL: https://www.calculator.net/prime-factorization-calculator.html
+Content: Thus, it can be seen that the prime factorization of 820, in either case, again is:
+820 = 41 × 5 × 2 × 2
+While these methods work for smaller numbers (and there are many other algorithms), there is no known algorithm for much larger numbers, and it can take a long period of time for even machines to compute the prime factorizations of larger numbers; in 2009, scientists concluded a project using hundreds of machines to factor the 232-digit number, RSA-768, and it took two years.
+ As an example, the number 60 can be factored into a product of prime numbers as follows:
+60 = 5 × 3 × 2 × 2
+As can be seen from the example above, there are no composite numbers in the factorization.
+ As a simple example, below is the prime factorization of 820 using trial division:
+820 ÷ 2 = 410
+410 ÷ 2 = 205
+Since 205 is no longer divisible by 2, test the next integers. In the example below, the prime factors are found by dividing 820 by a prime factor, 2, then continuing to divide the result until all factors are prime. This is essentially the "brute force" method for determining the prime factors of a number, and though 820 is a simple example, it can get far more tedious very quickly.
+
+
+Document: 10
+URL: https://byjus.com/maths/factors-of-200/
+Content: Learn how to find the factors of 200 by dividing it by natural numbers and using prime factorisation methods. See the pair factors, prime factors and sum of all the factors of 200 with examples and practice questions.
+</results><|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>

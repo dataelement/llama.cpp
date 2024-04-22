@@ -1,0 +1,138 @@
+{
+    "model": "command-r-plus-104b",
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are an expert who answers the user's question with the most relevant datasource. You are equipped with an internet search tool and a special vectorstore of information about how to write good essays.\nYou also have a 'random_operation_tool' tool, you must use it to compute the random operation between two numbers."
+        },
+        {
+            "role": "user",
+            "content": "Calculate the result of the random operation of 10 and 20. Then find a few fun facts about that number, as well as its prime factors."
+        },
+        {
+            "role": "assistant", 
+            "content": "Plan: First, I will use the random_operation_tool to calculate the result of the random operation between 10 and 20. Then, I will search for fun facts about the resulting number, as well as its prime factors.", 
+            "tool_calls": [
+                {
+                "id": "",
+                "function": { 
+                    "name": "random_operation", 
+                    "arguments": "{\"a\": 10, \"b\": 20}"
+                },
+                "type": "function"
+                }
+            ]
+        },
+        {
+            "name": "internet_search",
+            "role": "tool",
+            "tool_call_id": "",
+            "content": "[{\"text\": \"Output: 200\"}]"
+        },
+        {
+            "role": "assistant", 
+            "content": "Reflection: The result of the random operation is 200. Now, I will search for fun facts about the number 200 and its prime factors.", 
+            "tool_calls": [
+                {
+                  "id": "call_x1",
+                  "function": { 
+                    "name": "internet_search", 
+                    "arguments": "{\"query\": \"fun facts about number 200\"}"
+                  },
+                  "type": "function"
+                },
+                {
+                  "id": "call_x2",
+                  "function": { 
+                    "name": "internet_search", 
+                    "arguments": "{\"query\": \"prime factors of 200\"}"
+                  },
+                  "type": "function"
+                }
+            ]
+        },
+        {
+            "name": "internet_search",
+            "role": "tool",
+            "tool_call_id": "call_x1",
+            "content": "[{\"text\": \"dummy11\"}, {\"text\": \"dummy12\"}]"
+        },
+        {
+            "name": "internet_search",
+            "role": "tool",
+            "tool_call_id": "call_x2",
+            "content": "[{\"text\": \"dummy21\"}, {\"text\": \"dummy22\"}]"
+        }
+    ],
+    "tools": [
+        {
+            "type": "function",
+            "function": {
+                "name": "directly_answer",
+                "description": "Calls a standard (un-augmented) AI chatbot to generate a response given the conversation history",
+                "parameters": {}
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "internet_search",
+                "description": "Returns a list of relevant document snippets for a textual query retrieved from the internet.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Query to search the internet with"
+                        }
+                    },
+                    "required": [
+                        "query"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "python_interpreter",
+                "description": "Executes python code and returns the result. The code runs in a static sandbox without interactive mode, so print output or save output to a file.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "Python code to execute."
+                        }
+                    },
+                    "required": [
+                        "code"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "random_operation",
+                "description": "Calculates a random operation between the inputs.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "a": {
+                            "type": "int",
+                            "description": "First input"
+                        },
+                        "b": {
+                            "type": "int",
+                            "description": "Second input"
+                        }          
+                    },
+                    "required": [
+                        "a", "b"
+                    ]
+                }
+            }
+        }
+    ]
+}

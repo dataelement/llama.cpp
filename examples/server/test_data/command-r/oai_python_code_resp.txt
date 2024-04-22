@@ -1,0 +1,11 @@
+Plan: I will write a bubble sort in Python and use the Python interpreter to run it.
+Action: ```json
+[
+    {
+        "tool_name": "python_interpreter",
+        "parameters": {
+            "code": "def bubble_sort(arr):\n    n = len(arr)\n    for i in range(n):\n        for j in range(0, n-i-1):\n            if arr[j] > arr[j+1]:\n                arr[j], arr[j+1] = arr[j+1], arr[j]\n    return arr\n\narr = [64, 34, 25, 12, 22, 11, 90]\nprint(\"Sorted array is\", bubble_sort(arr))"
+        }
+    }
+]
+```
