@@ -1122,8 +1122,13 @@ struct server_context {
         const std::string token_str = llama_token_to_piece(ctx, result.tok);
         slot.sampled = result.tok;
 
+        // fix: render eos token in the output
+        bool is_eog = llama_token_is_eog(model, result.tok);
         // search stop word and delete it
-        slot.generated_text += token_str;
+        if (!is_eog) {
+            slot.generated_text += token_str;
+        }
+
         slot.has_next_token = true;
 
         if (slot.ctx_sampling->params.use_penalty_prompt_tokens && result.tok != -1) {

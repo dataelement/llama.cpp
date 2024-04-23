@@ -4351,8 +4351,9 @@ static void llm_load_vocab(
                         //       need to fix convert script
                         //vocab.id_to_token[t.second].type == LLAMA_TOKEN_TYPE_CONTROL &&
                         (t.first == "<|eot_id|>" ||
-                         t.first == "<|im_emd|>" ||
-                         t.first == "<end_of_turn>"
+                         t.first == "<|im_end|>" ||
+                         t.first == "<end_of_turn>" ||
+                         t.first == "<|END_OF_TURN_TOKEN|>"
                         )
                    ) {
                     vocab.special_eot_id = t.second;
