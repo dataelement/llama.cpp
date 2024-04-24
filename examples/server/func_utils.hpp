@@ -451,6 +451,16 @@ Finally, Write 'Grounded answer:' followed by a response to the user's last inpu
     // Part I. Tools Def Context
     std::string tools_def_context = "";
     std::vector<json> tools = json_value(body, "tools", json::array());
+    if (tools.size() > 0) {
+        json direct_answer_tool = json::object();
+        direct_answer_tool["type"] = "function";
+        direct_answer_tool["function"] = json::object();
+        direct_answer_tool["function"]["name"] = "directly_answer";
+        direct_answer_tool["function"]["description"] = "Calls a standard (un-augmented) AI chatbot to generate a response given the conversation history";
+        direct_answer_tool["function"]["parameters"] = json::object();
+        tools.insert(tools.begin(), direct_answer_tool);
+    }
+
     // bool has_chinese_prompt = false;
     // for (const auto& msg: ua_messages) {
     //     if (msg.role.compare("user") == 0 && contains_chinese(msg.content)) {
@@ -477,6 +487,12 @@ Finally, Write 'Grounded answer:' followed by a response to the user's last inpu
                 std::string type = it.value()["type"].get<std::string>();
                 if (type.compare("string") == 0) {
                     type = "str";
+                } else if (type.compare("array") == 0) {
+                    std::string item_type = it.value()["items"]["type"].get<std::string>();
+                    if (item_type == "string") {
+                        item_type = "str";
+                    }
+                    type = "List[" + item_type + "]";
                 }
                 python_function += it.key() + ": " + type + ", ";
             }
@@ -498,6 +514,12 @@ Finally, Write 'Grounded answer:' followed by a response to the user's last inpu
                 auto desc = it.value()["description"].get<std::string>();
                 if (type.compare("string") == 0) {
                     type = "str";
+                } else if (type.compare("array") == 0) {
+                    std::string item_type = it.value()["items"]["type"].get<std::string>();
+                    if (item_type == "string") {
+                        item_type = "str";
+                    }
+                    type = "List[" + item_type + "]";
                 }
                 python_function += "        " + it.key() + " (" + type + "): " + desc + "\n";
             }

@@ -1,0 +1,69 @@
+{
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "calculate_area",
+          "description": "Calculate the area of a shape",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "shape": {
+                "type": "string",
+                "description": "The type of shape (circle, triangle, rectangle, etc.)"
+              },
+             
+                "radius": {
+                "type": "number",
+                "description": "The radius of the circle"
+                },
+                "base": {
+                "type": "number",
+                "description": "The base of the triangle or rectangle"
+                },
+                "height": {
+                "type": "number",
+                "description": "The height of the triangle or rectangle"
+                }
+            },
+            "required": [
+              "shape",
+              "radius",
+              "base",
+              "height"
+            ]
+          }
+        }
+      },
+     {
+    "type": "function",
+    "function": {
+      "name": "calculate_tip",
+      "description": "Calculate the tip amount for a bill",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "bill_amount": {
+            "type": "number",
+            "description": "The total bill amount"
+          },
+          "tip_percentage": {
+            "type": "number",
+            "description": "The tip percentage to apply"
+          }
+        },
+        "required": [
+          "bill_amount",
+          "tip_percentage"
+        ]
+      }
+    }
+  }
+],
+"messages": [
+  {
+    "role": "user",
+    "content": "Hi, I need to calculate the area of a circle with a radius of 5 units. Can you help me with that?"
+  }
+]
+}
