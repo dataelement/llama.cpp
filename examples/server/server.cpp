@@ -3523,6 +3523,16 @@ int main(int argc, char ** argv) {
         std::cout << "---body---\n[" << req.body  << "]\n";
         std::cout << "---prompt---\n[" << data["prompt"] << "]\n";
 
+        // write to prompt to a single file
+        std::string file_name = "./results/prompt" + std::to_string(std::time(0)) + ".txt";
+        std::ofstream prompt_file(file_name);
+        prompt_file << data["prompt"].dump();
+        prompt_file.close();
+        sleep(1);
+
+        res_error(res, "escape completion");
+        return;
+
         // json data = oaicompat_completion_params_parse(ctx_server.model, json::parse(req.body), sparams.chat_template);
 
         const int id_task = ctx_server.queue_tasks.get_new_id();

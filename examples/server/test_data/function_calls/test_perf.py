@@ -2,6 +2,7 @@ import threading
 from openai import OpenAI
 import argparse
 import json
+from tqdm import tqdm
 
 
 def batch_call(bodys, api_url, model_name, result_file):
@@ -10,7 +11,7 @@ def batch_call(bodys, api_url, model_name, result_file):
     base_url=api_url)
 
     with open(result_file, 'w') as fout:
-        for body in bodys:
+        for body in tqdm(bodys):
             # print('---\n', json.dumps(body, ensure_ascii=False, indent=2))
             completion = client.chat.completions.create(
                 model=model_name,
@@ -93,8 +94,8 @@ def trans_conv_oai_request(conv):
 
     return requests
 
-def perf(test_data, api_url, model_name, num_parallel, cnt):
-    conversations = json.load(open(test_data))[1000:1000+cnt]
+def perf(test_data, api_url, model_name, num_parallel, cnt, seed):
+    conversations = json.load(open(test_data))[seed:seed + cnt]
     bodys = []
     for coversation in conversations:
         bodys.extend(trans_conv_oai_request(coversation))
@@ -129,10 +130,10 @@ def main():
     parser.add_argument('-d', '--test-data', type=str, required=False, default='glaive_toolcall_10k.json', help='test data')
     parser.add_argument('-n', '--num-parallel', type=int, required=False, default=1, help="num parallel")
     parser.add_argument('-c', '--cnt', type=int, required=False, default=1000, help="run count")
-    
+    parser.add_argument('-s', '--seed', type=int, required=False, default=0, help="seed")
     
     args = parser.parse_args()
-    perf(args.test_data, args.api_url, args.model_name, args.num_parallel, args.cnt)
+    perf(args.test_data, args.api_url, args.model_name, args.num_parallel, args.cnt, args.seed)
 
 if __name__ == '__main__':
    main()
