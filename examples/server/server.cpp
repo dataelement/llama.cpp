@@ -3520,18 +3520,8 @@ int main(int argc, char ** argv) {
 
         json data = oaicompat_completion_params_parse(ctx_server.model, body, sparams.chat_template);
 
-        std::cout << "---body---\n[" << req.body  << "]\n";
-        std::cout << "---prompt---\n[" << data["prompt"] << "]\n";
-
-        // write to prompt to a single file
-        std::string file_name = "./results/prompt" + std::to_string(std::time(0)) + ".txt";
-        std::ofstream prompt_file(file_name);
-        prompt_file << data["prompt"].dump();
-        prompt_file.close();
-        sleep(1);
-
-        res_error(res, "escape completion");
-        return;
+        LOG_INFO("request body", {{"body", req.body}});
+        LOG_INFO("completion prompt", {{"prompt", data["prompt"]}});
 
         // json data = oaicompat_completion_params_parse(ctx_server.model, json::parse(req.body), sparams.chat_template);
 
@@ -3546,8 +3536,8 @@ int main(int argc, char ** argv) {
 
             if (!result.error && result.stop) {
                 json result_oai = format_final_response_oaicompat(data, result.data, completion_id);
-                std::cout << "---completion---\n[" << result_oai["choices"][0]["message"] << "]\n";
-                
+                LOG_INFO("completion messsage", {{"message", result_oai["choices"][0]["message"]}});
+
                 std::string tool_choice = llama_functionary::json_value(body, "tool_choice", std::string());
                 bool has_right_oai_response = true;
                 if (tool_choice.compare("none") != 0) {

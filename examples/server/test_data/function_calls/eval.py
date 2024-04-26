@@ -39,7 +39,7 @@ def post_infer(body, api_url, model_name):
     return response
 
 
-def trans_conv_oai_request(dialogs):
+def trans_conv_oai_request(dialogs, filter_system=False):
     tools = dialogs['tools']
     messages = dialogs['messages']
     # messages cates: user, system, assistant, assistant with tool calls, tool result message
@@ -51,6 +51,9 @@ def trans_conv_oai_request(dialogs):
     request['messages'] = []
     one_round_messages = []
     for m in messages:
+        if filter_system and m['role'] == 'system':
+            continue
+
         if m['role'] in ['user', 'system', 'tool']:
             one_round_messages.append(m)
         elif m['role'] == 'assistant':
@@ -79,7 +82,7 @@ def main():
     for file in files:
         file_path = os.path.join(args.test_data, file)
         dialogs = json.load(open(file_path))       
-        bodys = trans_conv_oai_request(dialogs)
+        bodys = trans_conv_oai_request(dialogs, True)
         all_bodys.extend(bodys)
 
     print('Total requests: {}'.format(len(all_bodys)))
@@ -88,16 +91,15 @@ def main():
     #         f.write(json.dumps(body, ensure_ascii=False) + '\n')
 
     # step 2. infer the data
-    # result_file = './outputs/func_call_ageent_pred_local_command_r_plus_v1.jsonl'
+    result_file = './outputs/func_call_ageent_pred_local_command_r_plus_v2.jsonl'
     outs = []
-    for body in tqdm(all_bodys[:1]):
-        print(body)
-        response = post_infer(body, args.api_url, args.model_name)
-        # outs.append(response.dict())
+    for body in tqdm(all_bodys):
+        response = infer(body, args.api_url, args.model_name)
+        outs.append(response.dict())
 
-    # with open(result_file, 'w') as f:
-    #     for out in tqdm(outs):
-    #         f.write(json.dumps(out, ensure_ascii=False) + '\n')
+    with open(result_file, 'w') as f:
+        for out in tqdm(outs):
+            f.write(json.dumps(out, ensure_ascii=False) + '\n')
 
 
 if __name__ == '__main__':
