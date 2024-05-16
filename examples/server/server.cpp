@@ -15,6 +15,7 @@
 // Change JSON_ASSERT from assert() to GGML_ASSERT:
 #define JSON_ASSERT GGML_ASSERT
 #include "json.hpp"
+#include "func_utils.hpp"
 
 // auto generated files (update with ./deps.sh)
 #include "index.html.hpp"
@@ -3516,7 +3517,16 @@ int main(int argc, char ** argv) {
 
     const auto handle_chat_completions = [&ctx_server, &sparams, &res_error](const httplib::Request & req, httplib::Response & res) {
         res.set_header("Access-Control-Allow-Origin", req.get_header_value("Origin"));
-        json data = oaicompat_completion_params_parse(ctx_server.model, json::parse(req.body), sparams.chat_template);
+        auto body = llama_functionary::json::parse(req.body);
+        auto status = llama_functionary::generate_oai_messages(body);
+        if (!status.ok()) {
+            res_error(res, status.message().c_str());
+            return;
+        }
+
+        json data = oaicompat_completion_params_parse(ctx_server.model, body, sparams.chat_template);
+
+        // json data = oaicompat_completion_params_parse(ctx_server.model, json::parse(req.body), sparams.chat_template);
 
         const int id_task = ctx_server.queue_tasks.get_new_id();
 
@@ -3530,7 +3540,20 @@ int main(int argc, char ** argv) {
             if (!result.error && result.stop) {
                 json result_oai = format_final_response_oaicompat(data, result.data, completion_id);
 
-                res.set_content(result_oai.dump(-1, ' ', false, json::error_handler_t::replace), "application/json; charset=utf-8");
+                std::string tool_choice = llama_functionary::json_value(body, "tool_choice", std::string());
+                bool has_right_oai_response = true;
+                if (tool_choice.compare("none") != 0) {
+                    auto status = llama_functionary::convert_oai_response(result_oai);
+                    if (!status.ok()) {
+                        has_right_oai_response = false;
+                        res_error(res, status.message().c_str());
+                    }
+                }  
+                if (has_right_oai_response) {
+                    res.set_content(result_oai.dump(-1, ' ', false, json::error_handler_t::replace), "application/json; charset=utf-8");
+                }
+
+                // res.set_content(result_oai.dump(-1, ' ', false, json::error_handler_t::replace), "application/json; charset=utf-8");
             } else {
                 res_error(res, result.data);
             }

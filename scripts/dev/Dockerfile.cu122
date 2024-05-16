@@ -1,0 +1,14 @@
+FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
+
+RUN apt-get update && apt-get install -y pip
+RUN pip3 install flask
+
+COPY ./bin/server /server
+
+RUN mkdir /opt/ || echo "Directory already exists"
+COPY ./dev/proxy_server.py /opt/proxy_server.py
+COPY ./dev/proxy.json /opt/proxy.json
+
+RUN apt-get clean &&  rm -rf /var/lib/apt/lists/* && rm -rf /root/.cache/pip
+
+ENTRYPOINT ["/server"]
