@@ -1,0 +1,14 @@
+{
+ "qwen1.5-110b-chat": [
+    "http://192.168.106.200:9200/v1/chat/completions",
+    "http://192.168.106.200:9201/v1/chat/completions",
+    "http://192.168.106.200:9202/v1/chat/completions",
+    "http://192.168.106.200:9203/v1/chat/completions"
+  ],
+  "command-r-plus-104b": [
+    "http://192.168.106.201:9200/v1/chat/completions",
+    "http://192.168.106.201:9201/v1/chat/completions",
+    "http://192.168.106.201:9202/v1/chat/completions",
+    "http://192.168.106.201:9203/v1/chat/completions"
+  ]
+}
